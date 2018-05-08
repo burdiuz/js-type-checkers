@@ -1,42 +1,44 @@
-import { getDefaultTypeChecker } from './defaultTypeChecker';
-import { isEnabled } from './enabled';
+import {
+  getDefaultTypeChecker,
+  setDefaultTypeChecker,
+} from './defaultTypeChecker';
+import {
+  ConsoleErrorReporter,
+  ConsoleWarnReporter,
+  getErrorReporter,
+  setErrorReporter,
+  ThrowErrorReporter,
+} from './errorReporter';
+import {
+  isEnabled,
+  setEnabled,
+} from './enabled';
+import {
+  getTargetTypeChecker,
+  getTargetTypeCheckerConfig,
+} from './config';
+import {
+  create,
+  isValidTarget,
+} from './proxy';
+import PrimitiveTypeChecker from './typeChecker';
 
-const objectProxy = (target) => new Proxy(
-  target,
-  {
-    get: () => {
-      // if object or function and deep -- wrap
-    },
-
-    set: () => {
-
-    },
-  }
-);
-
-const functionProxy = (target, name = 'anonymous') => new Proxy(
-  target,
-  {
-    apply: () => {
-
-    },
-    construct: () => {
-
-    },
-  }
-);
-
-export const create = (target, deep = true, typeChecker = getDefaultTypeChecker()) => {
-  if (!target || !isEnabled()) {
-    return target;
-  }
-
-  const config = { deep, typeChecker, enabled: true, types: typeChecker.init(target) };
-
-  if (target)
-
-    setConfig(
-      target
-
-    );
+export {
+  getDefaultTypeChecker,
+  setDefaultTypeChecker,
+  ConsoleErrorReporter,
+  ConsoleWarnReporter,
+  getErrorReporter,
+  setErrorReporter,
+  ThrowErrorReporter,
+  isEnabled,
+  setEnabled,
+  getTargetTypeChecker,
+  getTargetTypeCheckerConfig,
+  create,
+  isValidTarget,
 };
+
+setDefaultTypeChecker(PrimitiveTypeChecker);
+
+export default create;
