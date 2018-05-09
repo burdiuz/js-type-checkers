@@ -40,20 +40,12 @@ const RETURN_VALUE = 'returnValue';
 const PrimitiveTypeChecker = {
   collectTypesOnInit: true,
 
-  getTypeString(value) {
-    if (value === undefined) {
-      return '';
-    } else if (value instanceof Array) {
-      return 'array';
-    }
+  init(target, errorReporter, cachedTypes = null) {
+    let types = {};
 
-    return typeof value;
-  },
-
-  init(target, errorReporter) {
-    const types = {};
-
-    if (this.collectTypesOnInit) {
+    if(cachedTypes) {
+      types = cachedTypes;
+    } else if (this.collectTypesOnInit) {
       Object.keys(target)
         .forEach((key) => {
           types[key] = this.getTypeString(target[key]);
@@ -64,6 +56,20 @@ const PrimitiveTypeChecker = {
       types,
       errorReporter,
     };
+  },
+
+  getTypeString(value) {
+    if (value === undefined) {
+      return '';
+    } else if (value instanceof Array) {
+      return 'array';
+    }
+
+    return typeof value;
+  },
+
+  mergeConfigs(target, ...sources) {
+    return Object.assign(target, ...sources);
   },
 
   getProperty(target, name, value, { types, errorReporter }, sequence) {

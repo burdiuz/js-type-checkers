@@ -1,7 +1,8 @@
 import { getDefaultTypeChecker } from './defaultTypeChecker';
 import { getErrorReporter } from './errorReporter';
 import { isEnabled } from './enabled';
-import { getConfig, setConfig, configKey } from './config';
+import { getConfig, setConfig, configKey } from './targetConfig';
+import { proxyOptions } from './proxyOptions';
 
 const validTypes = {
   object: true,
@@ -20,12 +21,14 @@ const getProperty = (target, property) => {
 
   const { deep, names, config, typeChecker } = getConfig(target);
 
-  typeChecker.getProperty && typeChecker.getProperty(target, property, value, config, names);
+  typeChecker.getProperty
+  && typeChecker.getProperty(target, property, value, config, names);
 
   if ((deep && isValidTarget(value)) || value instanceof Function) {
     const { children } = getConfig(target);
 
     if (!children.hasOwnProperty(property)) {
+      // FIXME should not cache value, only config
       children[property] = create(value, { deep, names: [...names, property] }, typeChecker);
     }
 
@@ -35,27 +38,46 @@ const getProperty = (target, property) => {
   return value;
 };
 
-const setProperty = (target, property, value, receiver) => {
-  const { names, config, children, typeChecker } = getConfig(target);
+const setProperty = (target, property, value) => {
+  const { deep, names, config, children, typeChecker } = getConfig(target);
 
   if (property !== configKey) {
     delete children[property];
-    typeChecker.setProperty && typeChecker.setProperty(target, property, value, config, names);
+
+    typeChecker.setProperty
+    && typeChecker.setProperty(target, property, value, config, names);
+
+    if (proxyOptions.wrapSetPropertyValues) {
+      // FIXME add cache
+      target[property] = create(value, { deep, names: [...names, property] }, typeChecker);
+      return;
+    }
   }
 
   target[property] = value;
 };
 
 const callFunction = (target, thisArg, argumentsList) => {
-  const { names, config, typeChecker } = getConfig(target);
+  const { deep, names, config, typeChecker } = getConfig(target);
 
-  typeChecker.arguments && typeChecker.arguments(target, thisArg, argumentsList, config, names);
+  typeChecker.arguments
+  && typeChecker.arguments(target, thisArg, argumentsList, config, names);
+
+  if (proxyOptions.wrapFunctionArguments) {
+    const { length } = argumentsList;
+    for (let index = 0; index < length; index++) {
+      argumentsList[index] = create(argumentsList[index], { deep, names: [...names, index] }, typeChecker);
+    }
+  }
 
   const result = target.apply(thisArg, argumentsList);
 
-  typeChecker.returnValue && typeChecker.returnValue(target, thisArg, result, config, names);
+  typeChecker.returnValue
+  && typeChecker.returnValue(target, thisArg, result, config, names);
 
-  return result;
+  return proxyOptions.wrapFunctionReturnValues
+    ? create(result, { deep, names: [...names] }, typeChecker)
+    : result;
 };
 
 const objectProxy = (target) => new Proxy(
