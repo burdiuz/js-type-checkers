@@ -1,44 +1,71 @@
 import {
   getDefaultTypeChecker,
   setDefaultTypeChecker,
-} from './defaultTypeChecker';
+} from './checkers';
+
 import {
   ConsoleErrorReporter,
   ConsoleWarnReporter,
+} from './reporters/console';
+
+import {
+  ThrowErrorReporter,
+} from './reporters/error';
+
+import {
   getErrorReporter,
   setErrorReporter,
-  ThrowErrorReporter,
-} from './errorReporter';
+} from './reporters';
+
 import {
   isEnabled,
   setEnabled,
 } from './enabled';
+
 import {
+  getTargetInfo,
   getTargetTypeChecker,
   getTargetTypeCheckerConfig,
-} from './config';
+  assignTargetInfo,
+  assignTargetInfoFrom,
+  mergeTargetInfo,
+} from './target';
+
 import {
+  getProxyConfig,
+  setProxyConfig,
   create,
-  isValidTarget,
+  createDeep,
 } from './proxy';
-import PrimitiveTypeChecker from './typeChecker';
+
+import {
+  isTypeChecked,
+  isValidTarget,
+} from './utils';
+
+import PrimitiveTypeChecker from './checkers/primitive';
 
 export {
   getDefaultTypeChecker,
   setDefaultTypeChecker,
   ConsoleErrorReporter,
   ConsoleWarnReporter,
+  ThrowErrorReporter,
   getErrorReporter,
   setErrorReporter,
-  ThrowErrorReporter,
   isEnabled,
   setEnabled,
   getTargetTypeChecker,
   getTargetTypeCheckerConfig,
+  assignTargetInfo,
+  assignTargetInfoFrom,
+  mergeTargetInfo,
+  getProxyConfig,
+  setProxyConfig,
   create,
+  createDeep,
+  isTypeChecked,
   isValidTarget,
 };
-
-setDefaultTypeChecker(PrimitiveTypeChecker);
 
 export default create;

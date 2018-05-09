@@ -1,56 +1,74 @@
-import { getDefaultTypeChecker } from './defaultTypeChecker';
-import { getErrorReporter } from './errorReporter';
-import { isEnabled } from './enabled';
-import { getConfig, setConfig, configKey } from './targetConfig';
-import { proxyOptions } from './proxyOptions';
-
-const validTypes = {
-  object: true,
-  function: true,
-};
-
-export const isValidTarget = (target) => target && validTypes[typeof target];
+import { getDefaultTypeChecker } from '../checkers';
+import { getErrorReporter } from '../reporters';
+import { isEnabled } from '../enabled';
+import {
+  INFO_KEY,
+  createTargetInfo,
+  getTargetInfo,
+  setTargetInfo,
+  createChildrenCache,
+  getChildInfo,
+  storeChildInfoFrom,
+  removeChildInfo,
+} from '../target';
+import { config as proxyConfig } from './config';
+import { isValidTarget, isTypeChecked } from '../utils';
+import { RETURN_VALUE } from '../checkers/utils';
 
 const getProperty = (target, property) => {
-  // if object or function and deep -- wrap
-  const value = target[property];
+  let value = target[property];
 
-  if (property === configKey) {
+  if (property === INFO_KEY) {
     return value;
   }
 
-  const { deep, names, config, typeChecker } = getConfig(target);
+  const info = getTargetInfo(target);
+  const { deep, names, config, checker } = info;
 
-  typeChecker.getProperty
-  && typeChecker.getProperty(target, property, value, config, names);
+  checker.getProperty
+    && checker.getProperty(target, property, value, config, names);
 
-  if ((deep && isValidTarget(value)) || value instanceof Function) {
-    const { children } = getConfig(target);
+  if (!isValidTarget(value) || isTypeChecked(value)) {
+    return value;
+  }
 
-    if (!children.hasOwnProperty(property)) {
-      // FIXME should not cache value, only config
-      children[property] = create(value, { deep, names: [...names, property] }, typeChecker);
+  if (deep || value instanceof Function) {
+    const { children } = info;
+    const childInfo = getChildInfo(children, name);
+
+    if (childInfo) {
+      value = create(value, { info: childInfo }, checker);
+    } else {
+      value = create(value, { deep, names: [...names, property] }, checker);
+      storeChildInfoFrom(children, name, value);
     }
-
-    return children[property];
   }
 
   return value;
 };
 
 const setProperty = (target, property, value) => {
-  const { deep, names, config, children, typeChecker } = getConfig(target);
+  const info = getTargetInfo(target);
+  const { deep, names, config, checker } = info;
 
-  if (property !== configKey) {
-    delete children[property];
+  if (property !== INFO_KEY) {
+    checker.setProperty
+      && checker.setProperty(target, property, value, config, names);
 
-    typeChecker.setProperty
-    && typeChecker.setProperty(target, property, value, config, names);
+    if (proxyConfig.wrapSetPropertyValues) {
+      const { children } = info;
 
-    if (proxyOptions.wrapSetPropertyValues) {
-      // FIXME add cache
-      target[property] = create(value, { deep, names: [...names, property] }, typeChecker);
-      return;
+      if (!isTypeChecked(value)) {
+        const childInfo = getChildInfo(children, name);
+
+        if (childInfo) {
+          value = create(value, { info: childInfo }, checker);
+        } else {
+          value = create(value, { deep, names: [...names, property] }, checker);
+        }
+      }
+
+      storeChildInfoFrom(children, name, value);
     }
   }
 
@@ -58,26 +76,40 @@ const setProperty = (target, property, value) => {
 };
 
 const callFunction = (target, thisArg, argumentsList) => {
-  const { deep, names, config, typeChecker } = getConfig(target);
+  const info = getTargetInfo(target);
+  const { deep, names, config, checker } = info;
 
-  typeChecker.arguments
-  && typeChecker.arguments(target, thisArg, argumentsList, config, names);
+  checker.arguments
+    && checker.arguments(target, thisArg, argumentsList, config, names);
 
-  if (proxyOptions.wrapFunctionArguments) {
+  if (proxyConfig.wrapFunctionArguments) {
     const { length } = argumentsList;
     for (let index = 0; index < length; index++) {
-      argumentsList[index] = create(argumentsList[index], { deep, names: [...names, index] }, typeChecker);
+      argumentsList[index] = create(argumentsList[index], { deep, names: [...names, index] }, checker);
     }
   }
 
-  const result = target.apply(thisArg, argumentsList);
+  let result = target.apply(thisArg, argumentsList);
 
-  typeChecker.returnValue
-  && typeChecker.returnValue(target, thisArg, result, config, names);
+  checker.returnValue
+    && checker.returnValue(target, thisArg, result, config, names);
 
-  return proxyOptions.wrapFunctionReturnValues
-    ? create(result, { deep, names: [...names] }, typeChecker)
-    : result;
+  if (proxyConfig.wrapFunctionReturnValues) {
+    const { children } = info;
+
+    if (!isTypeChecked(result)) {
+      const childInfo = getChildInfo(children, RETURN_VALUE);
+
+      if (childInfo) {
+        result = create(result, { info: childInfo }, checker);
+      } else {
+        result = create(result, { deep, names: [...names] }, checker)
+      }
+    }
+
+    storeChildInfoFrom(children, RETURN_VALUE, result);
+  }
+  return result;
 };
 
 const objectProxy = (target) => new Proxy(
@@ -96,20 +128,30 @@ const functionProxy = (target) => new Proxy(
   },
 );
 
-export const create = (target, { deep = true, names = [] } = {}, typeChecker = getDefaultTypeChecker()) => {
-  if (!isValidTarget(target) || !isEnabled() || getConfig(target)) {
+export const create = (
+  target,
+  {
+    deep = true,
+    names = [],
+    config = null,
+    children = null,
+    info = null, // exclusive option, if set other options being ignored
+  } = {},
+  checker = getDefaultTypeChecker(),
+) => {
+  if (!isValidTarget(target) || !isEnabled() || isTypeChecked(target)) {
     return target;
   }
 
-  setConfig(
+  setTargetInfo(
     target,
-    {
+    info || createTargetInfo(
+      checker,
+      checker.init(target, getErrorReporter(), config),
       deep,
       names,
-      children: {},
-      typeChecker,
-      config: typeChecker.init(target, getErrorReporter()),
-    },
+      createChildrenCache(children),
+    ),
   );
 
   if (target instanceof Function) {
@@ -117,4 +159,10 @@ export const create = (target, { deep = true, names = [] } = {}, typeChecker = g
   }
 
   return objectProxy(target);
+};
+
+export const createDeep = () => {
+  // FIXME add new factory function createDeep, it will have deep == true by default and init type checkers for all internal objects 
+  // and functions by reassigning original values with type checked proxies
+  // when creating checkers for children objects should check cached info
 };
