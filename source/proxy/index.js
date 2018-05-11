@@ -1,5 +1,6 @@
 import { getProxyConfig, setProxyConfig } from './config';
-import { create, createDeep } from './proxy';
+import create from './create';
+import createDeep from './createDeep';
 
 export {
   getProxyConfig,

@@ -31,9 +31,7 @@ import {
   mergeTargetInfo,
 } from './target/info';
 
-import {
-  objectMerge,
-} from './target/object';
+import objectMerge from './target/objectMerge';
 
 import {
   getProxyConfig,
@@ -50,6 +48,7 @@ import {
 import PrimitiveTypeChecker from './checkers/primitive';
 
 export {
+  PrimitiveTypeChecker,
   getDefaultTypeChecker,
   setDefaultTypeChecker,
   ConsoleErrorReporter,

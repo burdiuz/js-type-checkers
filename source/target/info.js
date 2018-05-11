@@ -56,6 +56,8 @@ export const storeChildInfoFrom = (cache, name, child) => {
 
 export const getChildInfo = (cache, name) => cache[name];
 
+export const hasChildInfo = (cache, name) => !!cache[name];
+
 export const removeChildInfo = (cache, name) => delete cache[name];
 
 export const mergeTargetInfo = (targetInfo, sourceInfo) => {

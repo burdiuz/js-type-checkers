@@ -47,7 +47,7 @@ const setTargetProperty = (createFn, target, property, value) => {
 
   target[property] = value;
   return true;
-}
+};
 
 const setProperty = (createFn) => (target, property, value) => {
   if (property === TARGET_KEY) {

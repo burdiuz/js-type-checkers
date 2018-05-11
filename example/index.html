@@ -33,7 +33,7 @@
       },
     };
 
-    const typeChecked = TypeCheckers.create(myObj);
+    const typeChecked = TypeCheckers.createDeep(myObj);
 
     // this code will work as intended, but type errors should spam
     typeChecked.val1 = 'abc';

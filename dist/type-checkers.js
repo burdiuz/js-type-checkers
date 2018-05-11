@@ -77,13 +77,15 @@
       const sourceTypes = source.types;
 
       for (const name in sourceTypes) {
-        const sourceType = sourceTypes[name];
-        const targetType = types[name];
+        if (sourceTypes.hasOwnProperty(name)) {
+          const sourceType = sourceTypes[name];
+          const targetType = types[name];
 
-        if (sourceType && targetType && targetType !== sourceType) {
-          errorReporter(MERGE, buildPath([...names, name]), targetType, sourceType);
-        } else {
-          types[name] = sourceType;
+          if (sourceType && targetType && targetType !== sourceType) {
+            errorReporter(MERGE, buildPath([...names, name]), targetType, sourceType);
+          } else {
+            types[name] = sourceType;
+          }
         }
       }
     },
@@ -337,7 +339,11 @@
       const { length } = argumentsList;
       // FIXME cache arguments info objects as children
       for (let index = 0; index < length; index++) {
-        argumentsList[index] = createFn(argumentsList[index], { deep, names: [...names, index], checker });
+        argumentsList[index] = createFn(argumentsList[index], {
+          deep,
+          names: [...names, index],
+          checker
+        });
       }
     }
 
@@ -404,50 +410,64 @@
     return objectProxy(target);
   };
 
-  const create = (target, {
+  const createInfoFromOptions = (target, {
     deep = true,
     names = [],
     config = null,
     children = null,
     checker = getDefaultTypeChecker(),
     info = null // exclusive option, if set other options being ignored
-  } = {}) => {
+  } = {}) => info || createTargetInfo(checker, checker.init(target, getErrorReporter(), config), deep, names, createChildrenCache(children));
+
+  const create = (target, options) => {
     if (!isValidTarget(target) || !isEnabled() || isTypeChecked(target)) {
       return target;
     }
 
-    setTargetInfo(target, info || createTargetInfo(checker, checker.init(target, getErrorReporter(), config), deep, names, createChildrenCache(children)));
+    setTargetInfo(target, createInfoFromOptions(target, options));
 
     return wrapWithProxy(target);
   };
+
   getProperty$1 = getProperty(create);
   setProperty$1 = setProperty(create);
   callFunction$1 = callFunction(create);
 
-  const deepInitializer = obj => {
-    for (const name in obj) {
-      const value = obj[name];
+  const deepInitializer = (target, options) => {
+    const info = createInfoFromOptions(target, options);
+    const { deep, names, checker, config, children } = info;
 
+    Object.keys(target).forEach(name => {
+      const value = target[name];
+
+      checker.getProperty(target, name, value, config, names);
+
+      // skip functions/methods since we get info about them only when being executed
       if (typeof value === 'object') {
-        deepInitializer(value);
+        let childInfo = getChildInfo(children, name);
+
+        if (childInfo) {
+          deepInitializer(value, { info: childInfo });
+        } else {
+          childInfo = deepInitializer(value, { deep, names: [...names, name], checker });
+          storeChildInfo(children, name, childInfo);
+        }
       }
-    }
+    });
+
+    setTargetInfo(target, info);
+
+    return info;
   };
 
-  // FIXME initialize info without creating proxies and create proxy only for root object
-  // will skip functions/methods since we get info about them only when being executed
   const createDeep = (target, options) => {
-    if (!target || target !== 'object' || !isEnabled() || isTypeChecked(target)) {
+    if (!target || typeof target !== 'object' || !isEnabled() || isTypeChecked(target)) {
       return target;
     }
 
-    const typeChecked = create(target, Object.assign({}, options, {
-      deep: true
-    }));
+    deepInitializer(target, options);
 
-    deepInitializer(typeChecked);
-
-    return typeChecked;
+    return wrapWithProxy(target);
   };
 
   const objectMerge = (options, ...sources) => {
@@ -467,6 +487,7 @@
     return Object.assign(target, ...sources);
   };
 
+  exports.PrimitiveTypeChecker = PrimitiveTypeChecker;
   exports.getDefaultTypeChecker = getDefaultTypeChecker;
   exports.setDefaultTypeChecker = setDefaultTypeChecker;
   exports.ConsoleErrorReporter = ConsoleErrorReporter;

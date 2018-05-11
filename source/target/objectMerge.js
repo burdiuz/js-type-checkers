@@ -1,7 +1,5 @@
 import {
   getTargetInfo,
-  mergeTargetInfo,
-  setTargetInfo,
   hasTargetInfo,
 } from './info';
 
@@ -9,7 +7,7 @@ import { create } from '../proxy';
 
 import { isEnabled } from '../enabled';
 
-export const objectMerge = (options, ...sources) => {
+const objectMerge = (options, ...sources) => {
   let target = {};
 
   if (isEnabled()) {
@@ -25,3 +23,5 @@ export const objectMerge = (options, ...sources) => {
 
   return Object.assign(target, ...sources);
 };
+
+export default objectMerge;

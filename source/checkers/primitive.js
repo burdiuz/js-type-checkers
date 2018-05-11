@@ -63,13 +63,15 @@ const PrimitiveTypeChecker = {
     const sourceTypes = source.types;
 
     for (const name in sourceTypes) {
-      const sourceType = sourceTypes[name];
-      const targetType = types[name];
+      if (sourceTypes.hasOwnProperty(name)) {
+        const sourceType = sourceTypes[name];
+        const targetType = types[name];
 
-      if (sourceType && targetType && targetType !== sourceType) {
-        errorReporter(MERGE, buildPath([...names, name]), targetType, sourceType);
-      } else {
-        types[name] = sourceType;
+        if (sourceType && targetType && targetType !== sourceType) {
+          errorReporter(MERGE, buildPath([...names, name]), targetType, sourceType);
+        } else {
+          types[name] = sourceType;
+        }
       }
     }
   },

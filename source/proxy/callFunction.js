@@ -13,7 +13,14 @@ const getTargetArguments = (createFn, target, argumentsList) => {
     const { length } = argumentsList;
     // FIXME cache arguments info objects as children
     for (let index = 0; index < length; index++) {
-      argumentsList[index] = createFn(argumentsList[index], { deep, names: [...names, index], checker });
+      argumentsList[index] = createFn(
+        argumentsList[index],
+        {
+          deep,
+          names: [...names, index],
+          checker,
+        },
+      );
     }
   }
 
