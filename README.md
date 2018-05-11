@@ -48,4 +48,5 @@ Library that reports assignments of values or function arguments, return values 
 3. +Decide, when setting value to a property, should this value be wrapped?
 4. +Decide, when calling function, should arguments and return value be wrapped?
 5. Lazy typings for Arrays or apply one type(from first element) for all items.
-6. Implement "createDeep()"
+6. +Implement "createDeep()"
+7. Cache child info for arguments
