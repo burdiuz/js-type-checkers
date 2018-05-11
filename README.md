@@ -43,8 +43,9 @@ Library that reports assignments of values or function arguments, return values 
 ```
 
 ### TODOs
-1. Add global methods to copy and apply configs, they should work with typeChecker.mergeConfig() method
-2. Add possibility to merge objects with type information using mergeConfigs()
-3. Decide, when setting value to a property, should this value be wrapped?
-4. Decide, when calling function, should arguments and return value be wrapped?
+1. +Add global methods to copy and apply configs, they should work with typeChecker.mergeConfig() method
+2. +Add possibility to merge objects with type information using mergeConfigs()
+3. +Decide, when setting value to a property, should this value be wrapped?
+4. +Decide, when calling function, should arguments and return value be wrapped?
 5. Lazy typings for Arrays or apply one type(from first element) for all items.
+6. Implement "createDeep()"

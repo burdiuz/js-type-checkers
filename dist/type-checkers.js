@@ -149,10 +149,26 @@
     names,
     children
   });
-  const getTargetInfo = target => target[INFO_KEY];
-  const setTargetInfo = (target, info) => target[INFO_KEY] = info;
-  const getTargetTypeChecker = target => getTargetInfo(target).checker;
-  const getTargetTypeCheckerConfig = target => getTargetInfo(target).config;
+
+  const getTargetInfo = target => {
+    return target ? target[INFO_KEY] : undefined;
+  };
+
+  const setTargetInfo = (target, info) => {
+    if (target && info) {
+      target[INFO_KEY] = info;
+    }
+  };
+
+  const hasTargetInfo = target => !!getTargetInfo(target);
+
+  const getTargetTypeChecker = target => {
+    return target && target[INFO_KEY] ? target[INFO_KEY].checker : undefined;
+  };
+
+  const getTargetTypeCheckerConfig = target => {
+    return target && target[INFO_KEY] ? target[INFO_KEY].config : undefined;
+  };
 
   const createChildrenCache = (children = {}) => Object.assign({}, children);
 
@@ -169,8 +185,11 @@
   };
 
   const storeChildInfo = (cache, name, childInfo) => {
-    // FIXME shoud it merge or just reassign?
-    cache[name] = childInfo;
+    delete cache[name];
+
+    if (childInfo) {
+      cache[name] = childInfo;
+    }
   };
 
   const storeChildInfoFrom = (cache, name, child) => {
@@ -180,9 +199,10 @@
   const getChildInfo = (cache, name) => cache[name];
 
   const mergeTargetInfo = (targetInfo, sourceInfo) => {
-    const { checker, children, config, names } = targetInfo;
+    const { deep, checker, children, config, names } = targetInfo;
 
     if (checker === sourceInfo.checker) {
+      targetInfo.deep = deep || sourceInfo.deep;
       targetInfo.children = mergeChildrenCache(children, sourceInfo.children);
       targetInfo.config = checker.mergeConfigs(config, sourceInfo.config, names);
     } else {
@@ -190,44 +210,6 @@
     }
 
     return targetInfo;
-  };
-
-  const assignTargetInfo = (targetInfo, ...sourceInfo) => {
-    const { length } = sourceInfo;
-
-    for (let index = 0; index < length; index++) {
-      const item = sourceInfo[index];
-
-      if (item) {
-        if (targetInfo) {
-          targetInfo = mergeTargetInfo(targetInfo, item);
-        } else {
-          targetInfo = item;
-        }
-      }
-    }
-
-    return targetInfo;
-  };
-
-  const assignTargetInfoFrom = (target, ...sources) => {
-    const { length } = sources;
-    let targetInfo = getTargetInfo(target);
-
-    for (let index = 0; index < length; index++) {
-      const sourceInfo = sources[index];
-
-      if (sourceInfo) {
-        if (targetInfo) {
-          targetInfo = mergeTargetInfo(targetInfo, sourceInfo);
-        } else {
-          targetInfo = sourceInfo;
-        }
-      }
-    }
-
-    setTargetInfo(target, targetInfo);
-    return target;
   };
 
   const config = {
@@ -240,19 +222,27 @@
 
   const getProxyConfig = () => Object.assign({}, config);
 
+  const TARGET_KEY = Symbol('type-checkers::target');
+
   const validTypes = {
-      object: true,
-      function: true
+    object: true,
+    function: true
   };
 
   const isValidTarget = target => target && validTypes[typeof target];
-  const isTypeChecked = target => !!getTargetInfo(target);
+  const isTypeChecked = target => Boolean(target && target[TARGET_KEY]);
 
   const getProperty = (target, property) => {
     let value = target[property];
 
     if (property === INFO_KEY) {
       return value;
+      /*
+      target[TARGET_KEY] is a virtual property accessing which indicates 
+      if object is wrapped with type checked proxy or not.
+      */
+    } else if (property === TARGET_KEY) {
+      return target;
     }
 
     const info = getTargetInfo(target);
@@ -266,13 +256,13 @@
 
     if (deep || value instanceof Function) {
       const { children } = info;
-      const childInfo = getChildInfo(children, name);
+      const childInfo = getChildInfo(children, property);
 
       if (childInfo) {
-        value = create(value, { info: childInfo }, checker);
+        value = create(value, { info: childInfo });
       } else {
-        value = create(value, { deep, names: [...names, property] }, checker);
-        storeChildInfoFrom(children, name, value);
+        value = create(value, { deep, names: [...names, property], checker });
+        storeChildInfoFrom(children, property, value);
       }
     }
 
@@ -280,30 +270,47 @@
   };
 
   const setProperty = (target, property, value) => {
-    const info = getTargetInfo(target);
+    if (property === TARGET_KEY) {
+      throw new Error(`"${TARGET_KEY}" is a virtual property and cannot be set`);
+    }
+
+    let info = getTargetInfo(target);
     const { deep, names, config: config$$1, checker } = info;
 
-    if (property !== INFO_KEY) {
-      checker.setProperty && checker.setProperty(target, property, value, config$$1, names);
+    checker.setProperty && checker.setProperty(target, property, value, config$$1, names);
 
-      if (config.wrapSetPropertyValues) {
-        const { children } = info;
-
-        if (!isTypeChecked(value)) {
-          const childInfo = getChildInfo(children, name);
-
-          if (childInfo) {
-            value = create(value, { info: childInfo }, checker);
-          } else {
-            value = create(value, { deep, names: [...names, property] }, checker);
-          }
-        }
-
-        storeChildInfoFrom(children, name, value);
+    if (property === INFO_KEY) {
+      if (info && value && info !== value) {
+        info = mergeTargetInfo(info, value);
+      } else {
+        info = value;
       }
+
+      target[property] = info;
+      return true;
+    } else if (!isValidTarget(value)) {
+      target[property] = value;
+      return true;
+    }
+
+    if (config.wrapSetPropertyValues) {
+      const { children } = info;
+
+      if (!isTypeChecked(value)) {
+        const childInfo = getChildInfo(children, property);
+
+        if (childInfo) {
+          value = create(value, { info: childInfo });
+        } else {
+          value = create(value, { deep, names: [...names, property], checker });
+        }
+      }
+
+      storeChildInfoFrom(children, property, value);
     }
 
     target[property] = value;
+    return true;
   };
 
   const callFunction = (target, thisArg, argumentsList) => {
@@ -314,8 +321,9 @@
 
     if (config.wrapFunctionArguments) {
       const { length } = argumentsList;
+      // FIXME cache arguments info objects as children
       for (let index = 0; index < length; index++) {
-        argumentsList[index] = create(argumentsList[index], { deep, names: [...names, index] }, checker);
+        argumentsList[index] = create(argumentsList[index], { deep, names: [...names, index], checker });
       }
     }
 
@@ -330,9 +338,9 @@
         const childInfo = getChildInfo(children, RETURN_VALUE);
 
         if (childInfo) {
-          result = create(result, { info: childInfo }, checker);
+          result = create(result, { info: childInfo });
         } else {
-          result = create(result, { deep, names: [...names] }, checker);
+          result = create(result, { deep, names: [...names], checker });
         }
       }
 
@@ -351,19 +359,7 @@
     construct: callFunction
   });
 
-  const create = (target, {
-    deep = true,
-    names = [],
-    config: config$$1 = null,
-    children = null,
-    info = null // exclusive option, if set other options being ignored
-  } = {}, checker = getDefaultTypeChecker()) => {
-    if (!isValidTarget(target) || !isEnabled() || isTypeChecked(target)) {
-      return target;
-    }
-
-    setTargetInfo(target, info || createTargetInfo(checker, checker.init(target, getErrorReporter(), config$$1), deep, names, createChildrenCache(children)));
-
+  const wrapWithProxy = target => {
     if (target instanceof Function) {
       return functionProxy(target);
     }
@@ -371,10 +367,64 @@
     return objectProxy(target);
   };
 
-  const createDeep = () => {
-    // FIXME add new factory function createDeep, it will have deep == true by default and init type checkers for all internal objects 
-    // and functions by reassigning original values with type checked proxies
-    // when creating checkers for children objects should check cached info
+  const create = (target, {
+    deep = true,
+    names = [],
+    config: config$$1 = null,
+    children = null,
+    checker = getDefaultTypeChecker(),
+    info = null // exclusive option, if set other options being ignored
+  } = {}) => {
+    if (!isValidTarget(target) || !isEnabled() || isTypeChecked(target)) {
+      return target;
+    }
+
+    setTargetInfo(target, info || createTargetInfo(checker, checker.init(target, getErrorReporter(), config$$1), deep, names, createChildrenCache(children)));
+
+    return wrapWithProxy(target);
+  };
+
+  const deepInitializer = obj => {
+    for (const name in obj) {
+      const value = obj[name];
+
+      if (typeof value === 'object') {
+        deepInitializer(value);
+      }
+    }
+  };
+
+  // FIXME initialize info without creating proxies and create proxy only for root object
+  // will skip functions/methods since we get info about them only when being executed
+  const createDeep = (target, options) => {
+    if (!target || target !== 'object' || !isEnabled() || isTypeChecked(target)) {
+      return target;
+    }
+
+    const typeChecked = create(target, Object.assign({}, options, {
+      deep: true
+    }));
+
+    deepInitializer(typeChecked);
+
+    return typeChecked;
+  };
+
+  const objectMerge = (options, ...sources) => {
+    let target = {};
+
+    if (isEnabled()) {
+      if (!options) {
+        options = {
+          info: getTargetInfo(sources.find(item => hasTargetInfo(item))),
+          deep: false
+        };
+      }
+
+      target = create(target, options);
+    }
+
+    return Object.assign(target, ...sources);
   };
 
   exports.getDefaultTypeChecker = getDefaultTypeChecker;
@@ -386,11 +436,13 @@
   exports.setErrorReporter = setErrorReporter;
   exports.isEnabled = isEnabled;
   exports.setEnabled = setEnabled;
+  exports.getTargetInfo = getTargetInfo;
+  exports.hasTargetInfo = hasTargetInfo;
+  exports.setTargetInfo = setTargetInfo;
   exports.getTargetTypeChecker = getTargetTypeChecker;
   exports.getTargetTypeCheckerConfig = getTargetTypeCheckerConfig;
-  exports.assignTargetInfo = assignTargetInfo;
-  exports.assignTargetInfoFrom = assignTargetInfoFrom;
   exports.mergeTargetInfo = mergeTargetInfo;
+  exports.objectMerge = objectMerge;
   exports.getProxyConfig = getProxyConfig;
   exports.setProxyConfig = setProxyConfig;
   exports.create = create;

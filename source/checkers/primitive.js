@@ -65,7 +65,7 @@ const PrimitiveTypeChecker = {
     for (const name in sourceTypes) {
       const sourceType = sourceTypes[name];
       const targetType = types[name];
-      
+
       if (sourceType && targetType && targetType !== sourceType) {
         errorReporter(MERGE, buildPath([...names, name]), targetType, sourceType);
       } else {

@@ -1,7 +1,7 @@
 {
   "name": "js-type-checkers",
   "description": "",
-  "version": "0.0.0",
+  "version": "0.1.1",
   "main": "dist/type-checkers.js",
   "keywords": [
     "js",

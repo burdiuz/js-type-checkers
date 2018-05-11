@@ -10,16 +10,24 @@ import {
   getChildInfo,
   storeChildInfoFrom,
   removeChildInfo,
-} from '../target';
+  mergeTargetInfo,
+} from '../target/info';
+import { TARGET_KEY } from '../target/proxy';
 import { config as proxyConfig } from './config';
 import { isValidTarget, isTypeChecked } from '../utils';
-import { RETURN_VALUE } from '../checkers/utils';
+import { RETURN_VALUE, MERGE } from '../checkers/utils';
 
 const getProperty = (target, property) => {
   let value = target[property];
 
   if (property === INFO_KEY) {
     return value;
+    /*
+    target[TARGET_KEY] is a virtual property accessing which indicates 
+    if object is wrapped with type checked proxy or not.
+    */
+  } else if (property === TARGET_KEY) {
+    return target;
   }
 
   const info = getTargetInfo(target);
@@ -34,13 +42,13 @@ const getProperty = (target, property) => {
 
   if (deep || value instanceof Function) {
     const { children } = info;
-    const childInfo = getChildInfo(children, name);
+    const childInfo = getChildInfo(children, property);
 
     if (childInfo) {
-      value = create(value, { info: childInfo }, checker);
+      value = create(value, { info: childInfo });
     } else {
-      value = create(value, { deep, names: [...names, property] }, checker);
-      storeChildInfoFrom(children, name, value);
+      value = create(value, { deep, names: [...names, property], checker });
+      storeChildInfoFrom(children, property, value);
     }
   }
 
@@ -48,31 +56,48 @@ const getProperty = (target, property) => {
 };
 
 const setProperty = (target, property, value) => {
-  const info = getTargetInfo(target);
+  if (property === TARGET_KEY) {
+    throw new Error(`"${TARGET_KEY}" is a virtual property and cannot be set`);
+  }
+
+  let info = getTargetInfo(target);
   const { deep, names, config, checker } = info;
 
-  if (property !== INFO_KEY) {
-    checker.setProperty
-      && checker.setProperty(target, property, value, config, names);
+  checker.setProperty
+    && checker.setProperty(target, property, value, config, names);
 
-    if (proxyConfig.wrapSetPropertyValues) {
-      const { children } = info;
-
-      if (!isTypeChecked(value)) {
-        const childInfo = getChildInfo(children, name);
-
-        if (childInfo) {
-          value = create(value, { info: childInfo }, checker);
-        } else {
-          value = create(value, { deep, names: [...names, property] }, checker);
-        }
-      }
-
-      storeChildInfoFrom(children, name, value);
+  if (property === INFO_KEY) {
+    if(info && value && info !== value) {
+      info = mergeTargetInfo(info, value);
+    } else {
+      info = value;
     }
+
+    target[property] = info;
+    return true;
+  } else if (!isValidTarget(value)) {
+    target[property] = value;
+    return true;
+  }
+
+  if (proxyConfig.wrapSetPropertyValues) {
+    const { children } = info;
+
+    if (!isTypeChecked(value)) {
+      const childInfo = getChildInfo(children, property);
+
+      if (childInfo) {
+        value = create(value, { info: childInfo });
+      } else {
+        value = create(value, { deep, names: [...names, property], checker });
+      }
+    }
+
+    storeChildInfoFrom(children, property, value);
   }
 
   target[property] = value;
+  return true;
 };
 
 const callFunction = (target, thisArg, argumentsList) => {
@@ -84,8 +109,9 @@ const callFunction = (target, thisArg, argumentsList) => {
 
   if (proxyConfig.wrapFunctionArguments) {
     const { length } = argumentsList;
+    // FIXME cache arguments info objects as children
     for (let index = 0; index < length; index++) {
-      argumentsList[index] = create(argumentsList[index], { deep, names: [...names, index] }, checker);
+      argumentsList[index] = create(argumentsList[index], { deep, names: [...names, index], checker });
     }
   }
 
@@ -101,9 +127,9 @@ const callFunction = (target, thisArg, argumentsList) => {
       const childInfo = getChildInfo(children, RETURN_VALUE);
 
       if (childInfo) {
-        result = create(result, { info: childInfo }, checker);
+        result = create(result, { info: childInfo });
       } else {
-        result = create(result, { deep, names: [...names] }, checker)
+        result = create(result, { deep, names: [...names], checker });
       }
     }
 
@@ -128,6 +154,14 @@ const functionProxy = (target) => new Proxy(
   },
 );
 
+export const wrapWithProxy = (target) => {
+  if (target instanceof Function) {
+    return functionProxy(target);
+  }
+
+  return objectProxy(target);
+};
+
 export const create = (
   target,
   {
@@ -135,9 +169,9 @@ export const create = (
     names = [],
     config = null,
     children = null,
+    checker = getDefaultTypeChecker(),
     info = null, // exclusive option, if set other options being ignored
   } = {},
-  checker = getDefaultTypeChecker(),
 ) => {
   if (!isValidTarget(target) || !isEnabled() || isTypeChecked(target)) {
     return target;
@@ -154,15 +188,35 @@ export const create = (
     ),
   );
 
-  if (target instanceof Function) {
-    return functionProxy(target);
-  }
-
-  return objectProxy(target);
+  return wrapWithProxy(target);
 };
 
-export const createDeep = () => {
-  // FIXME add new factory function createDeep, it will have deep == true by default and init type checkers for all internal objects 
-  // and functions by reassigning original values with type checked proxies
-  // when creating checkers for children objects should check cached info
+const deepInitializer = (obj) => {
+ for(const name in obj) {
+   const value = obj[name];
+
+   if(typeof value === 'object') {
+    deepInitializer(value);
+   }
+ }
+};
+
+// FIXME initialize info without creating proxies and create proxy only for root object
+// will skip functions/methods since we get info about them only when being executed
+export const createDeep = (target, options) => {
+  if (!target || target !== 'object' || !isEnabled() || isTypeChecked(target)) {
+    return target;
+  }
+
+  const typeChecked = create(
+    target, 
+    {
+      ...options,
+      deep: true,
+    },
+  );
+
+  deepInitializer(typeChecked);
+
+  return typeChecked;
 };

@@ -24,12 +24,16 @@ import {
 
 import {
   getTargetInfo,
+  hasTargetInfo,
+  setTargetInfo,
   getTargetTypeChecker,
   getTargetTypeCheckerConfig,
-  assignTargetInfo,
-  assignTargetInfoFrom,
   mergeTargetInfo,
-} from './target';
+} from './target/info';
+
+import {
+  objectMerge,
+} from './target/object';
 
 import {
   getProxyConfig,
@@ -55,11 +59,13 @@ export {
   setErrorReporter,
   isEnabled,
   setEnabled,
+  getTargetInfo,
+  hasTargetInfo,
+  setTargetInfo,
   getTargetTypeChecker,
   getTargetTypeCheckerConfig,
-  assignTargetInfo,
-  assignTargetInfoFrom,
   mergeTargetInfo,
+  objectMerge,
   getProxyConfig,
   setProxyConfig,
   create,
