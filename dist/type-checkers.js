@@ -232,36 +232,17 @@
   const isValidTarget = target => target && validTypes[typeof target];
   const isTypeChecked = target => Boolean(target && target[TARGET_KEY]);
 
-  const getProperty = (target, property) => {
-    let value = target[property];
-
-    if (property === INFO_KEY) {
-      return value;
-      /*
-      target[TARGET_KEY] is a virtual property accessing which indicates 
-      if object is wrapped with type checked proxy or not.
-      */
-    } else if (property === TARGET_KEY) {
-      return target;
-    }
-
+  const getTargetProperty = (createFn, target, property, value) => {
     const info = getTargetInfo(target);
-    const { deep, names, config: config$$1, checker } = info;
-
-    checker.getProperty && checker.getProperty(target, property, value, config$$1, names);
-
-    if (!isValidTarget(value) || isTypeChecked(value)) {
-      return value;
-    }
+    const { deep, children, names, checker } = info;
 
     if (deep || value instanceof Function) {
-      const { children } = info;
       const childInfo = getChildInfo(children, property);
 
       if (childInfo) {
-        value = create(value, { info: childInfo });
+        value = createFn(value, { info: childInfo });
       } else {
-        value = create(value, { deep, names: [...names, property], checker });
+        value = createFn(value, { deep, names: [...names, property], checker });
         storeChildInfoFrom(children, property, value);
       }
     }
@@ -269,17 +250,36 @@
     return value;
   };
 
-  const setProperty = (target, property, value) => {
-    if (property === TARGET_KEY) {
-      throw new Error(`"${TARGET_KEY}" is a virtual property and cannot be set`);
-    }
-
-    let info = getTargetInfo(target);
-    const { deep, names, config: config$$1, checker } = info;
-
-    checker.setProperty && checker.setProperty(target, property, value, config$$1, names);
+  const getProperty = createFn => (target, property) => {
+    const value = target[property];
 
     if (property === INFO_KEY) {
+      return value;
+      /*
+      target[TARGET_KEY] is a virtual property accessing which indicates
+      if object is wrapped with type checked proxy or not.
+      */
+    } else if (property === TARGET_KEY) {
+      return target;
+    }
+
+    const info = getTargetInfo(target);
+    const { names, config, checker } = info;
+
+    if (checker.getProperty) {
+      checker.getProperty(target, property, value, config, names);
+    }
+
+    if (!isValidTarget(value) || isTypeChecked(value)) {
+      return value;
+    }
+
+    return getTargetProperty(createFn, target, property, value);
+  };
+
+  const setNonTargetProperty = (target, property, value) => {
+    if (property === INFO_KEY) {
+      let info = getTargetInfo(target);
       if (info && value && info !== value) {
         info = mergeTargetInfo(info, value);
       } else {
@@ -293,16 +293,20 @@
       return true;
     }
 
+    return false;
+  };
+
+  const setTargetProperty = (createFn, target, property, value) => {
     if (config.wrapSetPropertyValues) {
-      const { children } = info;
+      const { deep, names, checker, children } = getTargetInfo(target);
 
       if (!isTypeChecked(value)) {
         const childInfo = getChildInfo(children, property);
 
         if (childInfo) {
-          value = create(value, { info: childInfo });
+          value = createFn(value, { info: childInfo });
         } else {
-          value = create(value, { deep, names: [...names, property], checker });
+          value = createFn(value, { deep, names: [...names, property], checker });
         }
       }
 
@@ -313,50 +317,83 @@
     return true;
   };
 
-  const callFunction = (target, thisArg, argumentsList) => {
-    const info = getTargetInfo(target);
-    const { deep, names, config: config$$1, checker } = info;
+  const setProperty = createFn => (target, property, value) => {
+    if (property === TARGET_KEY) {
+      throw new Error(`"${TARGET_KEY}" is a virtual property and cannot be set`);
+    }
 
-    checker.arguments && checker.arguments(target, thisArg, argumentsList, config$$1, names);
+    const { names, config: config$$1, checker } = getTargetInfo(target);
 
+    if (checker.setProperty) {
+      checker.setProperty(target, property, value, config$$1, names);
+    }
+
+    return setNonTargetProperty(target, property, value) || setTargetProperty(createFn, target, property, value);
+  };
+
+  const getTargetArguments = (createFn, target, argumentsList) => {
     if (config.wrapFunctionArguments) {
+      const { deep, names, checker } = getTargetInfo(target);
       const { length } = argumentsList;
       // FIXME cache arguments info objects as children
       for (let index = 0; index < length; index++) {
-        argumentsList[index] = create(argumentsList[index], { deep, names: [...names, index], checker });
+        argumentsList[index] = createFn(argumentsList[index], { deep, names: [...names, index], checker });
       }
     }
 
-    let result = target.apply(thisArg, argumentsList);
-
-    checker.returnValue && checker.returnValue(target, thisArg, result, config$$1, names);
-
+    return argumentsList;
+  };
+  const getTargetReturnValue = (createFn, target, returnValue) => {
     if (config.wrapFunctionReturnValues) {
-      const { children } = info;
+      const { deep, names, checker, children } = getTargetInfo(target);
 
-      if (!isTypeChecked(result)) {
+      if (!isTypeChecked(returnValue)) {
         const childInfo = getChildInfo(children, RETURN_VALUE);
 
         if (childInfo) {
-          result = create(result, { info: childInfo });
+          returnValue = createFn(returnValue, { info: childInfo });
         } else {
-          result = create(result, { deep, names: [...names], checker });
+          returnValue = createFn(returnValue, { deep, names: [...names], checker });
         }
       }
 
-      storeChildInfoFrom(children, RETURN_VALUE, result);
+      storeChildInfoFrom(children, RETURN_VALUE, returnValue);
     }
-    return result;
+
+    return returnValue;
   };
 
+  const callFunction = createFn => (target, thisArg, argumentsList) => {
+    const info = getTargetInfo(target);
+    const { names, config: config$$1, checker } = info;
+
+    if (checker.arguments) {
+      checker.arguments(target, thisArg, argumentsList, config$$1, names);
+    }
+
+    argumentsList = getTargetArguments(createFn, target, argumentsList);
+
+    const result = target.apply(thisArg, argumentsList);
+
+    if (checker.returnValue) {
+      checker.returnValue(target, thisArg, result, config$$1, names);
+    }
+
+    return getTargetReturnValue(createFn, target, result);
+  };
+
+  let getProperty$1;
+  let setProperty$1;
+  let callFunction$1;
+
   const objectProxy = target => new Proxy(target, {
-    get: getProperty,
-    set: setProperty
+    get: getProperty$1,
+    set: setProperty$1
   });
 
   const functionProxy = target => new Proxy(target, {
-    apply: callFunction,
-    construct: callFunction
+    apply: callFunction$1,
+    construct: callFunction$1
   });
 
   const wrapWithProxy = target => {
@@ -370,7 +407,7 @@
   const create = (target, {
     deep = true,
     names = [],
-    config: config$$1 = null,
+    config = null,
     children = null,
     checker = getDefaultTypeChecker(),
     info = null // exclusive option, if set other options being ignored
@@ -379,10 +416,13 @@
       return target;
     }
 
-    setTargetInfo(target, info || createTargetInfo(checker, checker.init(target, getErrorReporter(), config$$1), deep, names, createChildrenCache(children)));
+    setTargetInfo(target, info || createTargetInfo(checker, checker.init(target, getErrorReporter(), config), deep, names, createChildrenCache(children)));
 
     return wrapWithProxy(target);
   };
+  getProperty$1 = getProperty(create);
+  setProperty$1 = setProperty(create);
+  callFunction$1 = callFunction(create);
 
   const deepInitializer = obj => {
     for (const name in obj) {
