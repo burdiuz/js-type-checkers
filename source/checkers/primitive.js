@@ -1,15 +1,11 @@
-const buildPath = sequence => sequence
-  .reduce((str, name) => {
-    if (String(parseInt(name, 10)) === name) {
-      str = `${str}[${name}]`;
-    } else if (/^[a-z][\w$]*$/i.test(name)) {
-      str = str ? `${str}.${name}` : name;
-    } else {
-      str = `${str}["${name}"]`;
-    }
-
-    return str;
-  }, '');
+import {
+  ARGUMENTS,
+  GET_PROPERTY,
+  RETURN_VALUE,
+  SET_PROPERTY,
+  MERGE,
+  buildPath,
+} from './utils';
 
 const checkType = (action, types, name, type, errorReporter, sequence) => {
   if (!type) {
@@ -32,13 +28,26 @@ const checkType = (action, types, name, type, errorReporter, sequence) => {
   return true;
 };
 
-const GET_PROPERTY = 'getProperty';
-const SET_PROPERTY = 'setProperty';
-const ARGUMENTS = 'arguments';
-const RETURN_VALUE = 'returnValue';
-
 const PrimitiveTypeChecker = {
   collectTypesOnInit: true,
+
+  init(target, errorReporter, cachedTypes = null) {
+    let types = {};
+
+    if (cachedTypes) {
+      types = cachedTypes;
+    } else if (this.collectTypesOnInit) {
+      Object.keys(target)
+        .forEach((key) => {
+          types[key] = this.getTypeString(target[key]);
+        });
+    }
+
+    return {
+      types,
+      errorReporter,
+    };
+  },
 
   getTypeString(value) {
     if (value === undefined) {
@@ -50,20 +59,21 @@ const PrimitiveTypeChecker = {
     return typeof value;
   },
 
-  init(target, errorReporter) {
-    const types = {};
+  mergeConfigs({ types, errorReporter }, source, names = []) {
+    const sourceTypes = source.types;
 
-    if (this.collectTypesOnInit) {
-      Object.keys(target)
-        .forEach((key) => {
-          types[key] = this.getTypeString(target[key]);
-        });
+    for (const name in sourceTypes) {
+      if (sourceTypes.hasOwnProperty(name)) {
+        const sourceType = sourceTypes[name];
+        const targetType = types[name];
+
+        if (sourceType && targetType && targetType !== sourceType) {
+          errorReporter(MERGE, buildPath([...names, name]), targetType, sourceType);
+        } else {
+          types[name] = sourceType;
+        }
+      }
     }
-
-    return {
-      types,
-      errorReporter,
-    };
   },
 
   getProperty(target, name, value, { types, errorReporter }, sequence) {
