@@ -1,11 +1,12 @@
 
 export const GET_PROPERTY = 'GetProperty';
 export const SET_PROPERTY = 'SetProperty';
+export const INDEX = 'Index';
 export const ARGUMENTS = 'Arguments';
 export const RETURN_VALUE = 'ReturnValue';
 export const MERGE = 'Merge';
 
-export const buildPath = sequence => sequence
+export const buildPath = (sequence) => sequence
   .reduce((str, name) => {
     if (String(parseInt(name, 10)) === name) {
       str = `${str}[${name}]`;
