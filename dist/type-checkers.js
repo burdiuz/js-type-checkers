@@ -4,15 +4,33 @@
   (factory((global.TypeCheckers = {})));
 }(this, (function (exports) { 'use strict';
 
-  const GET_PROPERTY = 'GetProperty';
-  const SET_PROPERTY = 'SetProperty';
-  const INDEX = 'Index';
-  const ARGUMENTS = 'Arguments';
-  const RETURN_VALUE = 'ReturnValue';
-  const MERGE = 'Merge';
+  const GET_PROPERTY = '(GetProperty)';
+  const SET_PROPERTY = '(SetProperty)';
+  const INDEX = '(Index)';
+  const ARGUMENTS = '(Arguments)';
+  const RETURN_VALUE = '(ReturnValue)';
+  const MERGE = '(Merge)';
+
+  function AsIs(value) {
+    if (this instanceof AsIs) {
+      this.value = value;
+    } else {
+      return new AsIs(value);
+    }
+  }
+
+  function asIs() {
+    return this.value;
+  }
+
+  AsIs.prototype.toString = asIs;
+  AsIs.prototype.valueOf = asIs;
+  AsIs.prototype[Symbol.toPrimitive] = asIs;
 
   const buildPath = sequence => sequence.reduce((str, name) => {
-    if (String(parseInt(name, 10)) === name) {
+    if (name instanceof AsIs) {
+      str = `${str}${name}`;
+    } else if (String(parseInt(name, 10)) === name) {
       str = `${str}[${name}]`;
     } else if (/^[a-z][\w$]*$/i.test(name)) {
       str = str ? `${str}.${name}` : name;
@@ -171,11 +189,15 @@
     indexBasedClasses.push(constructor);
   };
 
-  const setIndexValueTypeBy = (target, value) => {
+  const setIndexValueType = (target, type) => {
     const config = getTargetTypeCheckerConfig(target);
     if (config) {
-      config.types[INDEX] = getTypeString(value);
+      config.types[INDEX] = type;
     }
+  };
+
+  const setIndexValueTypeBy = (target, value) => {
+    setIndexValueType(target, getTypeString(value));
   };
 
   const replaceIndexedTypeCheck = (target, typeCheckFn) => {
@@ -226,7 +248,7 @@
 
       const type = getTypeString(value);
 
-      return checkPrimitiveType(GET_PROPERTY, types, INDEX, type, errorReporter, sequence);
+      return checkPrimitiveType(GET_PROPERTY, types, AsIs(INDEX), type, errorReporter, sequence);
     },
 
     getNamedProperty(target, name, value, config, sequence) {
@@ -260,7 +282,7 @@
 
       const type = getTypeString(newValue);
 
-      return checkPrimitiveType(SET_PROPERTY, types, INDEX, type, errorReporter, sequence);
+      return checkPrimitiveType(SET_PROPERTY, types, AsIs(INDEX), type, errorReporter, sequence);
     },
 
     setNamedProperty(target, name, newValue, config, sequence) {
@@ -307,7 +329,7 @@
 
       const type = getTypeString(value);
 
-      return checkPrimitiveType(RETURN_VALUE, types, RETURN_VALUE, type, errorReporter, sequence);
+      return checkPrimitiveType(RETURN_VALUE, types, AsIs(RETURN_VALUE), type, errorReporter, sequence);
     },
 
     isIndexAccessTarget,
@@ -317,6 +339,7 @@
     replaceArgumentsTypeCheck,
     replaceReturnValueTypeCheck,
     registerIndexBasedClass,
+    setIndexValueType,
     setIndexValueTypeBy,
     replaceIndexedTypeCheck
   };

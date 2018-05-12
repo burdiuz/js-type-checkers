@@ -6,6 +6,7 @@ import {
   INDEX,
   MERGE,
   buildPath,
+  AsIs,
 } from './utils';
 
 import { getTargetTypeCheckerConfig } from '../target/info';
@@ -93,11 +94,15 @@ export const registerIndexBasedClass = (constructor) => {
   indexBasedClasses.push(constructor);
 };
 
-export const setIndexValueTypeBy = (target, value) => {
+export const setIndexValueType = (target, type) => {
   const config = getTargetTypeCheckerConfig(target);
   if (config) {
-    config.types[INDEX] = getTypeString(value);
+    config.types[INDEX] = type;
   }
+};
+
+export const setIndexValueTypeBy = (target, value) => {
+  setIndexValueType(target, getTypeString(value));
 };
 
 export const replaceIndexedTypeCheck = (target, typeCheckFn) => {
@@ -149,7 +154,7 @@ const PrimitiveTypeChecker = {
 
     const type = getTypeString(value);
 
-    return checkPrimitiveType(GET_PROPERTY, types, INDEX, type, errorReporter, sequence);
+    return checkPrimitiveType(GET_PROPERTY, types, AsIs(INDEX), type, errorReporter, sequence);
   },
 
   getNamedProperty(target, name, value, config, sequence) {
@@ -183,7 +188,7 @@ const PrimitiveTypeChecker = {
 
     const type = getTypeString(newValue);
 
-    return checkPrimitiveType(SET_PROPERTY, types, INDEX, type, errorReporter, sequence);
+    return checkPrimitiveType(SET_PROPERTY, types, AsIs(INDEX), type, errorReporter, sequence);
   },
 
   setNamedProperty(target, name, newValue, config, sequence) {
@@ -230,7 +235,7 @@ const PrimitiveTypeChecker = {
 
     const type = getTypeString(value);
 
-    return checkPrimitiveType(RETURN_VALUE, types, RETURN_VALUE, type, errorReporter, sequence);
+    return checkPrimitiveType(RETURN_VALUE, types, AsIs(RETURN_VALUE), type, errorReporter, sequence);
   },
 
   isIndexAccessTarget,
@@ -240,6 +245,7 @@ const PrimitiveTypeChecker = {
   replaceArgumentsTypeCheck,
   replaceReturnValueTypeCheck,
   registerIndexBasedClass,
+  setIndexValueType,
   setIndexValueTypeBy,
   replaceIndexedTypeCheck,
 };

@@ -46,6 +46,11 @@
     // this code will work as intended, but type errors should spam
     typeChecked.val1 = 'abc';
     typeChecked.val2 = { shouldBeString: true };
+
+    // when indexed typing enabled
+    TypeCheckers.PrimitiveTypeChecker.setIndexValueTypeBy(typeChecked.list, 0);
+    typeChecked.list[0] = 'string';
+
     // will recognize array and show error
     typeChecked.list = {};
 
