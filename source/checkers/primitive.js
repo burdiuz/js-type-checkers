@@ -7,7 +7,9 @@ import {
   buildPath,
 } from './utils';
 
-const checkType = (action, types, name, type, errorReporter, sequence) => {
+import { getTargetTypeCheckerConfig } from '../target/info';
+
+const checkPrimitiveType = (action, types, name, type, errorReporter, sequence) => {
   if (!type) {
     return true;
   }
@@ -15,9 +17,8 @@ const checkType = (action, types, name, type, errorReporter, sequence) => {
   const storedType = types[name];
 
   if (storedType) {
-    // TODO add possibility to store function in types[name] that can be called to identify if there are type error
     if (storedType !== type) {
-      errorReporter(action, buildPath([...sequence, name]), types[name], type);
+      errorReporter(action, buildPath([...sequence, name]), storedType, type);
 
       return false;
     }
@@ -76,38 +77,84 @@ const PrimitiveTypeChecker = {
     }
   },
 
-  getProperty(target, name, value, { types, errorReporter }, sequence) {
-    return checkType(
-      GET_PROPERTY,
-      types,
-      name,
-      this.getTypeString(value),
-      errorReporter,
-      sequence,
-    );
+  replacePropertyTypeCheck(target, name, typeCheckFn) {
+    const { types } = getTargetTypeCheckerConfig(target);
+    delete types[name];
+
+    if (typeCheckFn) {
+      types[name] = typeCheckFn;
+    }
   },
 
-  setProperty(target, name, newValue, { types, errorReporter }, sequence) {
-    return checkType(
+  replaceArgumentsTypeCheck(target, name, argumentsTypeCheckFn) {
+    const { types } = getTargetTypeCheckerConfig(target);
+    delete types[ARGUMENTS];
+
+    if (argumentsTypeCheckFn) {
+      types[name] = argumentsTypeCheckFn;
+    }
+  },
+
+  replaceReturnValueTypeCheck(target, name, returnValueTypeCheckFn) {
+    const { types } = getTargetTypeCheckerConfig(target);
+    delete types[RETURN_VALUE];
+
+    if (returnValueTypeCheckFn) {
+      types[RETURN_VALUE] = returnValueTypeCheckFn;
+    }
+  },
+
+  getProperty(target, name, value, config, sequence) {
+    const { types, errorReporter } = config;
+    const typeFn = types[name];
+
+    if (typeFn instanceof Function) {
+      return typeFn(GET_PROPERTY, target, name, value, config, sequence);
+    }
+
+    const type = this.getTypeString(value);
+
+    return checkPrimitiveType(GET_PROPERTY, types, name, type, errorReporter, sequence);
+  },
+
+  setProperty(target, name, newValue, config, sequence) {
+    const { types, errorReporter } = config;
+    const typeFn = types[name];
+
+    if (typeFn instanceof Function) {
+      return typeFn(SET_PROPERTY, target, name, newValue, config, sequence);
+    }
+
+    const type = this.getTypeString(newValue);
+
+    return checkPrimitiveType(
       SET_PROPERTY,
       types,
       name,
-      this.getTypeString(newValue),
+      type,
       errorReporter,
       sequence,
     );
   },
 
-  arguments(target, thisArg, args, { types, errorReporter }, sequence) {
+  arguments(target, thisArg, args, config, sequence) {
+    const { types, errorReporter } = config;
+    const typeFn = types[ARGUMENTS];
+
+    if (typeFn instanceof Function) {
+      return typeFn(ARGUMENTS, target, args, config, sequence);
+    }
+
     const { length } = args;
     let valid = true;
 
     for (let index = 0; index < length; index++) {
-      const agrValid = checkType(
+      const type = this.getTypeString(args[index]);
+      const agrValid = checkPrimitiveType(
         ARGUMENTS,
         types,
         String(index),
-        this.getTypeString(args[index]),
+        type,
         errorReporter,
         sequence,
       );
@@ -118,12 +165,21 @@ const PrimitiveTypeChecker = {
     return valid;
   },
 
-  returnValue(target, thisArg, value, { types, errorReporter }, sequence) {
-    return checkType(
+  returnValue(target, thisArg, value, config, sequence) {
+    const { types, errorReporter } = config;
+    const typeFn = types[RETURN_VALUE];
+
+    if (typeFn instanceof Function) {
+      return typeFn(ARGUMENTS, target, value, config, sequence);
+    }
+
+    const type = this.getTypeString(value);
+
+    return checkPrimitiveType(
       RETURN_VALUE,
       types,
-      '',
-      this.getTypeString(value),
+      RETURN_VALUE,
+      type,
       errorReporter,
       sequence,
     );

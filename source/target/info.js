@@ -1,6 +1,12 @@
 export const INFO_KEY = Symbol('type-checkers::info');
 
-export const createTargetInfo = (checker, config, deep = true, names = [], children = createChildrenCache()) => ({
+export const createTargetInfo = (
+  checker,
+  config,
+  deep = true,
+  names = [],
+  children = createChildrenCache(),
+) => ({
   checker,
   config,
   deep,
@@ -8,9 +14,7 @@ export const createTargetInfo = (checker, config, deep = true, names = [], child
   children,
 });
 
-export const getTargetInfo = (target) => {
-  return target ? target[INFO_KEY] : undefined;
-};
+export const getTargetInfo = (target) => (target ? target[INFO_KEY] : undefined);
 
 export const setTargetInfo = (target, info) => {
   if (target && info) {
@@ -20,13 +24,11 @@ export const setTargetInfo = (target, info) => {
 
 export const hasTargetInfo = (target) => !!getTargetInfo(target);
 
-export const getTargetTypeChecker = (target) => {
-  return target && target[INFO_KEY] ? target[INFO_KEY].checker : undefined;
-};
+export const getTargetTypeChecker = (target) =>
+  (target && target[INFO_KEY] ? target[INFO_KEY].checker : undefined);
 
-export const getTargetTypeCheckerConfig = (target) => {
-  return target && target[INFO_KEY] ? target[INFO_KEY].config : undefined;
-};
+export const getTargetTypeCheckerConfig = (target) =>
+  (target && target[INFO_KEY] ? target[INFO_KEY].config : undefined);
 
 export const createChildrenCache = (children = {}) => ({ ...children });
 

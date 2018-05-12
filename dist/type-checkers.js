@@ -22,7 +22,77 @@
     return str;
   }, '');
 
-  const checkType = (action, types, name, type, errorReporter, sequence) => {
+  const INFO_KEY = Symbol('type-checkers::info');
+
+  const createTargetInfo = (checker, config, deep = true, names = [], children = createChildrenCache()) => ({
+    checker,
+    config,
+    deep,
+    names,
+    children
+  });
+
+  const getTargetInfo = target => {
+    return target ? target[INFO_KEY] : undefined;
+  };
+
+  const setTargetInfo = (target, info) => {
+    if (target && info) {
+      target[INFO_KEY] = info;
+    }
+  };
+
+  const hasTargetInfo = target => !!getTargetInfo(target);
+
+  const getTargetTypeChecker = target => {
+    return target && target[INFO_KEY] ? target[INFO_KEY].checker : undefined;
+  };
+
+  const getTargetTypeCheckerConfig = target => target && target[INFO_KEY] ? target[INFO_KEY].config : undefined;
+
+  const createChildrenCache = (children = {}) => Object.assign({}, children);
+
+  const mergeChildrenCache = (targetCache, sourceCache) => {
+    for (const name in sourceCache) {
+      if (targetCache.hasOwnProperty(name)) {
+        targetCache[name] = mergeTargetInfo(targetCache[name], sourceCache[name]);
+      } else {
+        targetCache[name] = sourceCache[name];
+      }
+    }
+
+    return targetCache;
+  };
+
+  const storeChildInfo = (cache, name, childInfo) => {
+    delete cache[name];
+
+    if (childInfo) {
+      cache[name] = childInfo;
+    }
+  };
+
+  const storeChildInfoFrom = (cache, name, child) => {
+    storeChildInfo(cache, name, getTargetInfo(child));
+  };
+
+  const getChildInfo = (cache, name) => cache[name];
+
+  const mergeTargetInfo = (targetInfo, sourceInfo) => {
+    const { deep, checker, children, config, names } = targetInfo;
+
+    if (checker === sourceInfo.checker) {
+      targetInfo.deep = deep || sourceInfo.deep;
+      targetInfo.children = mergeChildrenCache(children, sourceInfo.children);
+      targetInfo.config = checker.mergeConfigs(config, sourceInfo.config, names);
+    } else {
+      console.error('TypeChecked objects can be merged only if using exactly same instance of type checker.');
+    }
+
+    return targetInfo;
+  };
+
+  const checkPrimitiveType = (action, types, name, type, errorReporter, sequence) => {
     if (!type) {
       return true;
     }
@@ -30,9 +100,8 @@
     const storedType = types[name];
 
     if (storedType) {
-      // TODO add possibility to store function in types[name] that can be called to identify if there are type error
       if (storedType !== type) {
-        errorReporter(action, buildPath([...sequence, name]), types[name], type);
+        errorReporter(action, buildPath([...sequence, name]), storedType, type);
 
         return false;
       }
@@ -90,20 +159,73 @@
       }
     },
 
-    getProperty(target, name, value, { types, errorReporter }, sequence) {
-      return checkType(GET_PROPERTY, types, name, this.getTypeString(value), errorReporter, sequence);
+    replacePropertyTypeCheck(target, name, typeCheckFn) {
+      const { types } = getTargetTypeCheckerConfig(target);
+      delete types[name];
+
+      if (typeCheckFn) {
+        types[name] = typeCheckFn;
+      }
     },
 
-    setProperty(target, name, newValue, { types, errorReporter }, sequence) {
-      return checkType(SET_PROPERTY, types, name, this.getTypeString(newValue), errorReporter, sequence);
+    replaceArgumentsTypeCheck(target, name, argumentsTypeCheckFn) {
+      const { types } = getTargetTypeCheckerConfig(target);
+      delete types[ARGUMENTS];
+
+      if (argumentsTypeCheckFn) {
+        types[name] = argumentsTypeCheckFn;
+      }
     },
 
-    arguments(target, thisArg, args, { types, errorReporter }, sequence) {
+    replaceReturnValueTypeCheck(target, name, returnValueTypeCheckFn) {
+      const { types } = getTargetTypeCheckerConfig(target);
+      delete types[RETURN_VALUE];
+
+      if (returnValueTypeCheckFn) {
+        types[RETURN_VALUE] = returnValueTypeCheckFn;
+      }
+    },
+
+    getProperty(target, name, value, config, sequence) {
+      const { types, errorReporter } = config;
+      const typeFn = types[name];
+
+      if (typeFn instanceof Function) {
+        return typeFn(GET_PROPERTY, target, name, value, config, sequence);
+      }
+
+      const type = this.getTypeString(value);
+
+      return checkPrimitiveType(GET_PROPERTY, types, name, type, errorReporter, sequence);
+    },
+
+    setProperty(target, name, newValue, config, sequence) {
+      const { types, errorReporter } = config;
+      const typeFn = types[name];
+
+      if (typeFn instanceof Function) {
+        return typeFn(SET_PROPERTY, target, name, newValue, config, sequence);
+      }
+
+      const type = this.getTypeString(newValue);
+
+      return checkPrimitiveType(SET_PROPERTY, types, name, type, errorReporter, sequence);
+    },
+
+    arguments(target, thisArg, args, config, sequence) {
+      const { types, errorReporter } = config;
+      const typeFn = types[ARGUMENTS];
+
+      if (typeFn instanceof Function) {
+        return typeFn(ARGUMENTS, target, args, config, sequence);
+      }
+
       const { length } = args;
       let valid = true;
 
       for (let index = 0; index < length; index++) {
-        const agrValid = checkType(ARGUMENTS, types, String(index), this.getTypeString(args[index]), errorReporter, sequence);
+        const type = this.getTypeString(args[index]);
+        const agrValid = checkPrimitiveType(ARGUMENTS, types, String(index), type, errorReporter, sequence);
 
         valid = agrValid && valid;
       }
@@ -111,15 +233,26 @@
       return valid;
     },
 
-    returnValue(target, thisArg, value, { types, errorReporter }, sequence) {
-      return checkType(RETURN_VALUE, types, '', this.getTypeString(value), errorReporter, sequence);
+    returnValue(target, thisArg, value, config, sequence) {
+      const { types, errorReporter } = config;
+      const typeFn = types[RETURN_VALUE];
+
+      if (typeFn instanceof Function) {
+        return typeFn(ARGUMENTS, target, value, config, sequence);
+      }
+
+      const type = this.getTypeString(value);
+
+      return checkPrimitiveType(RETURN_VALUE, types, RETURN_VALUE, type, errorReporter, sequence);
     }
   };
 
   let defaultTypeChecker = PrimitiveTypeChecker;
 
   const getDefaultTypeChecker = () => defaultTypeChecker;
-  const setDefaultTypeChecker = typeChecker => defaultTypeChecker = typeChecker;
+  const setDefaultTypeChecker = typeChecker => {
+    defaultTypeChecker = typeChecker;
+  };
 
   const constructErrorString = (action, name, required, actual) => `${action}Error on "${name}" instead of "${required}" received "${actual}"`;
 
@@ -141,78 +274,6 @@
 
   const isEnabled = () => enabled;
   const setEnabled = (value = true) => enabled = !!value;
-
-  const INFO_KEY = Symbol('type-checkers::info');
-
-  const createTargetInfo = (checker, config, deep = true, names = [], children = createChildrenCache()) => ({
-    checker,
-    config,
-    deep,
-    names,
-    children
-  });
-
-  const getTargetInfo = target => {
-    return target ? target[INFO_KEY] : undefined;
-  };
-
-  const setTargetInfo = (target, info) => {
-    if (target && info) {
-      target[INFO_KEY] = info;
-    }
-  };
-
-  const hasTargetInfo = target => !!getTargetInfo(target);
-
-  const getTargetTypeChecker = target => {
-    return target && target[INFO_KEY] ? target[INFO_KEY].checker : undefined;
-  };
-
-  const getTargetTypeCheckerConfig = target => {
-    return target && target[INFO_KEY] ? target[INFO_KEY].config : undefined;
-  };
-
-  const createChildrenCache = (children = {}) => Object.assign({}, children);
-
-  const mergeChildrenCache = (targetCache, sourceCache) => {
-    for (const name in sourceCache) {
-      if (targetCache.hasOwnProperty(name)) {
-        targetCache[name] = mergeTargetInfo(targetCache[name], sourceCache[name]);
-      } else {
-        targetCache[name] = sourceCache[name];
-      }
-    }
-
-    return targetCache;
-  };
-
-  const storeChildInfo = (cache, name, childInfo) => {
-    delete cache[name];
-
-    if (childInfo) {
-      cache[name] = childInfo;
-    }
-  };
-
-  const storeChildInfoFrom = (cache, name, child) => {
-    storeChildInfo(cache, name, getTargetInfo(child));
-  };
-
-  const getChildInfo = (cache, name) => cache[name];
-
-  const mergeTargetInfo = (targetInfo, sourceInfo) => {
-    const { deep, checker, children, config, names } = targetInfo;
-
-    if (checker === sourceInfo.checker) {
-      targetInfo.deep = deep || sourceInfo.deep;
-      targetInfo.children = mergeChildrenCache(children, sourceInfo.children);
-      targetInfo.config = checker.mergeConfigs(config, sourceInfo.config, names);
-    } else {
-      console.error('TypeChecked objects can be merged only if using exactly same instance of type checker.');
-    }
-
-    return targetInfo;
-  };
 
   const config = {
     wrapFunctionReturnValues: true,

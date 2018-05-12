@@ -15,6 +15,12 @@
   <style type="text/css">
   </style>
   <script type="text/javascript">
+    class MyClass {
+      constructor(arg) {
+        this.value = arg;
+      }
+    }
+
     const myObj = {
       val1: true,
       val2: 'string',
@@ -23,6 +29,8 @@
       },
       val3: 123,
       list: [],
+      customValue: new MyClass(),
+      requiredValue: {},
       child: {
         val1: true,
         val2: 'string',
@@ -40,6 +48,38 @@
     typeChecked.val2 = { shouldBeString: true };
     // will recognize array and show error
     typeChecked.list = {};
+
+    TypeCheckers.PrimitiveTypeChecker.replacePropertyTypeCheck(
+      typeChecked,
+      'customValue',
+      (action, target, name, value, { errorReporter }) => {
+        if (value && !(value instanceof MyClass)) {
+          const match = String(value.constructor).match(/^\w+\s+(\w+)/);
+          errorReporter(action, name, 'MyClass', (match && match[1]) || typeof value);
+
+          return false;
+        }
+
+        return true;
+      },
+    );
+
+    typeChecked.customValue = { value: 15 };
+
+    TypeCheckers.PrimitiveTypeChecker.replacePropertyTypeCheck(
+      typeChecked,
+      'requiredValue',
+      (action, target, name, value, { errorReporter }) => {
+        if (!value) {
+          console.error(`RequiredValueError "${name}" must contain a value.`);
+          return false;
+        }
+
+        return true;
+      },
+    );
+
+    typeChecked.requiredValue = null;
 
     // optional parameter "deep" is set to true by default, so all objects coming from properties will be wrapped too
     typeChecked.child.val3 = false;
