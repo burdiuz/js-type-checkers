@@ -31,6 +31,8 @@ import {
   mergeTargetInfo,
 } from './target/info';
 
+import { getOriginalTarget } from './target/proxy';
+
 import objectMerge from './target/objectMerge';
 
 import {
@@ -64,6 +66,7 @@ export {
   getTargetTypeChecker,
   getTargetTypeCheckerConfig,
   mergeTargetInfo,
+  getOriginalTarget,
   objectMerge,
   getProxyConfig,
   setProxyConfig,

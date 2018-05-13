@@ -26,6 +26,8 @@ const objectProxy = (target) => new Proxy(
 const functionProxy = (target) => new Proxy(
   target,
   {
+    get: getProperty,
+    set: setProperty,
     apply: callFunction,
     construct: callFunction,
   },

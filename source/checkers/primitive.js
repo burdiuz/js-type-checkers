@@ -72,16 +72,16 @@ export const replacePropertyTypeCheck = (target, name, typeCheckFn) => {
   }
 };
 
-export const replaceArgumentsTypeCheck = (target, name, argumentsTypeCheckFn) => {
+export const replaceArgumentsTypeCheck = (target, argumentsTypeCheckFn) => {
   const { types } = getTargetTypeCheckerConfig(target);
   delete types[ARGUMENTS];
 
   if (argumentsTypeCheckFn) {
-    types[name] = argumentsTypeCheckFn;
+    types[ARGUMENTS] = argumentsTypeCheckFn;
   }
 };
 
-export const replaceReturnValueTypeCheck = (target, name, returnValueTypeCheckFn) => {
+export const replaceReturnValueTypeCheck = (target, returnValueTypeCheckFn) => {
   const { types } = getTargetTypeCheckerConfig(target);
   delete types[RETURN_VALUE];
 
@@ -230,7 +230,7 @@ const PrimitiveTypeChecker = {
     const typeFn = types[RETURN_VALUE];
 
     if (typeFn instanceof Function) {
-      return typeFn(ARGUMENTS, target, value, config, sequence);
+      return typeFn(RETURN_VALUE, target, value, config, sequence);
     }
 
     const type = getTypeString(value);

@@ -2,7 +2,13 @@ import PrimitiveTypeChecker from './primitive';
 
 let defaultTypeChecker = PrimitiveTypeChecker;
 
-export const getDefaultTypeChecker = () => defaultTypeChecker;
-export const setDefaultTypeChecker = (typeChecker) => {
+const getDefaultTypeChecker = () => defaultTypeChecker;
+const setDefaultTypeChecker = (typeChecker) => {
   defaultTypeChecker = typeChecker;
+};
+
+export {
+  PrimitiveTypeChecker,
+  getDefaultTypeChecker,
+  setDefaultTypeChecker,
 };
