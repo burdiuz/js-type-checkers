@@ -99,4 +99,4 @@ describe('Set Property', () => {
   describe('When custom type checker specified', () => {
 
   });
-});a
+});

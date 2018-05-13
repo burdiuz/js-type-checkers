@@ -117,6 +117,7 @@ export const replaceIndexedTypeCheck = (target, typeCheckFn) => {
 const PrimitiveTypeChecker = {
   collectTypesOnInit: true,
   areArrayElementsOfSameType: true,
+  ignorePrototypeValues: false,
 
   init(target, errorReporter, cachedTypes = null) {
     let types = {};
@@ -124,10 +125,19 @@ const PrimitiveTypeChecker = {
     if (cachedTypes) {
       types = cachedTypes;
     } else if (this.collectTypesOnInit) {
-      Object.keys(target)
-        .forEach((key) => {
-          types[key] = getTypeString(target[key]);
-        });
+      if (this.areArrayElementsOfSameType && target instanceof Array) {
+        const indexType = getTypeString(target
+        .find((item) => (typeof item !== 'undefined')));
+
+        if (indexType !== 'undefined') {
+          types[INDEX] = indexType;
+        }
+      } else {
+        Object.keys(target)
+          .forEach((key) => {
+            types[key] = getTypeString(target[key]);
+          });
+      }
     }
 
     return {
@@ -137,8 +147,12 @@ const PrimitiveTypeChecker = {
   },
 
   getProperty(target, name, value, config, sequence) {
+    if(!target.hasOwnProperty(name) && (this.ignorePrototypeValues || value instanceof Function)) {
+      return true;
+    }
+
     if (this.areArrayElementsOfSameType && isIndexAccessTarget(target)) {
-      return this.getIndexProperty(target, name, value, config, sequence);
+      return this.getIndexProperty(target, INDEX, value, config, sequence);
     }
 
     return this.getNamedProperty(target, name, value, config, sequence);
@@ -172,7 +186,7 @@ const PrimitiveTypeChecker = {
 
   setProperty(target, name, newValue, config, sequence) {
     if (this.areArrayElementsOfSameType && isIndexAccessTarget(target)) {
-      return this.setIndexProperty(target, name, newValue, config, sequence);
+      return this.setIndexProperty(target, INDEX, newValue, config, sequence);
     }
 
     return this.setNamedProperty(target, name, newValue, config, sequence);

@@ -1,7 +1,7 @@
 import { setErrorReporter } from '../reporters';
 import { ConsoleWarnReporter } from '../reporters/console';
 import { PrimitiveTypeChecker, setDefaultTypeChecker } from '../checkers';
-import { SET_PROPERTY, GET_PROPERTY, ARGUMENTS, RETURN_VALUE } from '../checkers/utils';
+import { SET_PROPERTY, GET_PROPERTY, ARGUMENTS, RETURN_VALUE, INDEX } from '../checkers/utils';
 import { getOriginalTarget, TARGET_KEY } from '../target/proxy';
 import { create, isTypeChecked } from '../';
 
@@ -232,11 +232,11 @@ describe('Custom Type Checkers', () => {
 
     describe('When returns value with wrong type', () => {
       beforeEach(() => {
-        target.method = () => ({ value: 15 })
+        target.method = () => ({ value: 15 });
         target.method();
       });
 
-      it.only('should run type checks', () => {
+      it('should run type checks', () => {
         expect(checker).toHaveBeenCalledTimes(1);
         expect(checker).toHaveBeenCalledWith(
           RETURN_VALUE,
@@ -257,6 +257,60 @@ describe('Custom Type Checkers', () => {
       checker = jest.fn(notLess3TypeChecker);
 
       PrimitiveTypeChecker.replaceIndexedTypeCheck(target, (...args) => checker(...args));
+    });
+
+    describe('When read value', () => {
+      beforeEach(() => {
+        expect(target[4]).toBe(5);
+        expect(target[1]).toBe(2);
+      });
+
+      it('should run type checks', () => {
+        expect(checker).toHaveBeenCalledTimes(2);
+        expect(checker).toHaveBeenCalledWith(
+          GET_PROPERTY,
+          expect.objectContaining([1, 2, 3, 4, 5]),
+          INDEX,
+          5,
+          expectConfig,
+          [],
+        );
+        expect(checker).toHaveBeenCalledWith(
+          GET_PROPERTY,
+          expect.objectContaining([1, 2, 3, 4, 5]),
+          INDEX,
+          2,
+          expectConfig,
+          [],
+        );
+      });
+    });
+
+    describe('When read value', () => {
+      beforeEach(() => {
+        target[1] = 12;
+        target[3] = 1;
+      });
+
+      it('should run type checks', () => {
+        expect(checker).toHaveBeenCalledTimes(2);
+        expect(checker).toHaveBeenCalledWith(
+          SET_PROPERTY,
+          getOriginalTarget(target),
+          INDEX,
+          12,
+          expectConfig,
+          [],
+        );
+        expect(checker).toHaveBeenCalledWith(
+          SET_PROPERTY,
+          getOriginalTarget(target),
+          INDEX,
+          1,
+          expectConfig,
+          [],
+        );
+      });
     });
   });
 });

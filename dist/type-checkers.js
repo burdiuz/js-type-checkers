@@ -167,16 +167,16 @@
     }
   };
 
-  const replaceArgumentsTypeCheck = (target, name, argumentsTypeCheckFn) => {
+  const replaceArgumentsTypeCheck = (target, argumentsTypeCheckFn) => {
     const { types } = getTargetTypeCheckerConfig(target);
     delete types[ARGUMENTS];
 
     if (argumentsTypeCheckFn) {
-      types[name] = argumentsTypeCheckFn;
+      types[ARGUMENTS] = argumentsTypeCheckFn;
     }
   };
 
-  const replaceReturnValueTypeCheck = (target, name, returnValueTypeCheckFn) => {
+  const replaceReturnValueTypeCheck = (target, returnValueTypeCheckFn) => {
     const { types } = getTargetTypeCheckerConfig(target);
     delete types[RETURN_VALUE];
 
@@ -212,6 +212,7 @@
   const PrimitiveTypeChecker = {
     collectTypesOnInit: true,
     areArrayElementsOfSameType: true,
+    ignorePrototypeValues: false,
 
     init(target, errorReporter, cachedTypes = null) {
       let types = {};
@@ -219,9 +220,17 @@
       if (cachedTypes) {
         types = cachedTypes;
       } else if (this.collectTypesOnInit) {
-        Object.keys(target).forEach(key => {
-          types[key] = getTypeString(target[key]);
-        });
+        if (this.areArrayElementsOfSameType && target instanceof Array) {
+          const indexType = getTypeString(target.find(item => typeof item !== 'undefined'));
+
+          if (indexType !== 'undefined') {
+            types[INDEX] = indexType;
+          }
+        } else {
+          Object.keys(target).forEach(key => {
+            types[key] = getTypeString(target[key]);
+          });
+        }
       }
 
       return {
@@ -231,8 +240,12 @@
     },
 
     getProperty(target, name, value, config, sequence) {
+      if (!target.hasOwnProperty(name) && (this.ignorePrototypeValues || value instanceof Function)) {
+        return true;
+      }
+
       if (this.areArrayElementsOfSameType && isIndexAccessTarget(target)) {
-        return this.getIndexProperty(target, name, value, config, sequence);
+        return this.getIndexProperty(target, INDEX, value, config, sequence);
       }
 
       return this.getNamedProperty(target, name, value, config, sequence);
@@ -266,7 +279,7 @@
 
     setProperty(target, name, newValue, config, sequence) {
       if (this.areArrayElementsOfSameType && isIndexAccessTarget(target)) {
-        return this.setIndexProperty(target, name, newValue, config, sequence);
+        return this.setIndexProperty(target, INDEX, newValue, config, sequence);
       }
 
       return this.setNamedProperty(target, name, newValue, config, sequence);
@@ -324,7 +337,7 @@
       const typeFn = types[RETURN_VALUE];
 
       if (typeFn instanceof Function) {
-        return typeFn(ARGUMENTS, target, value, config, sequence);
+        return typeFn(RETURN_VALUE, target, value, config, sequence);
       }
 
       const type = getTypeString(value);
@@ -370,7 +383,15 @@
   let enabled = true;
 
   const isEnabled = () => enabled;
-  const setEnabled = (value = true) => enabled = !!value;
+  const setEnabled = (value = true) => {
+    enabled = !!value;
+  };
+
+  const TARGET_KEY = Symbol('type-checkers::target');
+
+  const getOriginalTarget = target => {
+    return target[TARGET_KEY] || target;
+  };
 
   const config = {
     wrapFunctionReturnValues: true,
@@ -381,8 +402,6 @@
   const setProxyConfig = newConfig => Object.assign(config, newConfig);
 
   const getProxyConfig = () => Object.assign({}, config);
-
-  const TARGET_KEY = Symbol('type-checkers::target');
 
   const validTypes = {
     object: true,
@@ -556,6 +575,8 @@
   });
 
   const functionProxy = target => new Proxy(target, {
+    get: getProperty$1,
+    set: setProperty$1,
     apply: callFunction$1,
     construct: callFunction$1
   });
@@ -661,6 +682,7 @@
   exports.getTargetTypeChecker = getTargetTypeChecker;
   exports.getTargetTypeCheckerConfig = getTargetTypeCheckerConfig;
   exports.mergeTargetInfo = mergeTargetInfo;
+  exports.getOriginalTarget = getOriginalTarget;
   exports.objectMerge = objectMerge;
   exports.getProxyConfig = getProxyConfig;
   exports.setProxyConfig = setProxyConfig;

@@ -1,7 +1,7 @@
 import { setErrorReporter } from '../reporters';
 import { PrimitiveTypeChecker, setDefaultTypeChecker } from '../checkers';
 import { SET_PROPERTY, GET_PROPERTY } from '../checkers/utils';
-import { create } from '../';
+import { create, isEnabled, isTypeChecked, setEnabled } from '../';
 
 describe('Set Property', () => {
   const reporter = jest.fn();
@@ -19,8 +19,17 @@ describe('Set Property', () => {
         numberValue: 12,
         stringValue: 'my string',
         booleanValue: true,
-        arrayValue: [],
-        objectValue: {},
+        arrayValue: [1, 2, 3],
+        objectValue: { val1: 1, val2: '2', val3: true },
+        method: () => false,
+      });
+    });
+
+    describe('When getting values', () => {
+      beforeEach(() => {
+        expect(target.numberValue).toBe(12);
+        expect(target.stringValue).toBe(12);
+        expect(target.booleanValue).toBe(12);
       });
     });
 
@@ -86,25 +95,81 @@ describe('Set Property', () => {
     });
   });
 
-  describe('When custom type checker specified', () => {
-    let myClassTypeChecker;
-
-    class MyClass {
-      constructor(value) {
-        this.value = value;
-      }
-    }
-
+  describe('When deep is true', () => {
     beforeEach(() => {
-      PrimitiveTypeChecker.collectTypesOnInit = true;
       target = create({
-        numberValue: 12,
-        objectValue: new MyClass(15),
+        arrayValue: [1, 2, 3],
+        objectValue: { val1: 1, val2: '2', val3: true },
+        method: () => false,
+      });
+    });
+
+    it('should have child objects type checked', () => {
+      expect(isTypeChecked(target.arrayValue)).toBe(true);
+      expect(isTypeChecked(target.objectValue)).toBe(true);
+    });
+
+    it('should have methods type checked', () => {
+      expect(isTypeChecked(target.method)).toBe(true);
+    });
+
+    describe('When accessing descendants', () => {
+      beforeEach(() => {
+        //expect(target.objectValue.val1).toBe(1);
+        console.log(isTypeChecked(target.arrayValue), target.arrayValue);
+        target.arrayValue[2] = '5';
+        target.objectValue.val1 = 'any string';
       });
 
-      myClassTypeChecker = jest.fn(() => true);
+      it.only('should report type violation', () => {
+        console.log(reporter.mock.calls);
+        //expect(reporter);
+      });
+    });
+  });
 
-      PrimitiveTypeChecker.replacePropertyTypeCheck(target, 'objectValue', myClassTypeChecker);
+  describe('When deep is false', () => {
+    beforeEach(() => {
+      target = create({
+        arrayValue: [1, 2, 3],
+        objectValue: { val1: 1, val2: '2', val3: true },
+        method: () => false,
+      }, { deep: false });
+    });
+
+    it('should have child objects type checked', () => {
+      expect(isTypeChecked(target.arrayValue)).toBe(false);
+      expect(isTypeChecked(target.objectValue)).toBe(false);
+    });
+
+    it('should have methods type checked', () => {
+      expect(isTypeChecked(target.method)).toBe(true);
+    });
+  });
+
+  describe('When disabled', () => {
+    beforeEach(() => {
+      setEnabled(false);
+
+      target = create({
+        numberValue: 12,
+      });
+
+      afterEach(() => {
+        setEnabled(true);
+      });
+
+      target.numberValue = 'abc';
+      target.numberValue = false;
+      target.numberValue = () => null;
+    });
+
+    it('should not be type checked', () => {
+      expect(isTypeChecked(target)).toBe(false);
+    });
+
+    it('should not check types', () => {
+      expect(reporter).not.toHaveBeenCalled();
     });
   });
 });
