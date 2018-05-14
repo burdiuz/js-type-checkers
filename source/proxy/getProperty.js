@@ -4,8 +4,18 @@ import {
   getChildInfo,
   storeChildInfoFrom,
 } from '../target/info';
+
+import {
+  getProxyConfigValue,
+  PROXY_IGNORE_PROTOTYPE_METHODS,
+} from './config';
+
+import {
+  isValidTarget,
+  isTypeChecked,
+} from '../utils';
+
 import { TARGET_KEY } from '../target/proxy';
-import { isValidTarget, isTypeChecked } from '../utils';
 
 const getTargetProperty = (createFn, target, property, value) => {
   const info = getTargetInfo(target);
@@ -14,15 +24,31 @@ const getTargetProperty = (createFn, target, property, value) => {
   if (deep || value instanceof Function) {
     const childInfo = getChildInfo(children, property);
 
+    // FIXME somehow method does not store children info
+    console.log(property, childInfo);
+
     if (childInfo) {
       value = createFn(value, { info: childInfo });
     } else {
       value = createFn(value, { deep, names: [...names, property], checker });
+      console.log('STORE:', value);
       storeChildInfoFrom(children, property, value);
     }
   }
 
   return value;
+};
+
+const isIgnoredProperty = (target, info, property, value) => {
+  if (
+    value instanceof Function
+    && !target.hasOwnProperty(property)
+    && getProxyConfigValue(PROXY_IGNORE_PROTOTYPE_METHODS, info)
+  ) {
+    return true;
+  }
+
+  return false;
 };
 
 const getProperty = (createFn) => (target, property) => {
@@ -45,7 +71,11 @@ const getProperty = (createFn) => (target, property) => {
     checker.getProperty(target, property, value, config, names);
   }
 
-  if (!isValidTarget(value) || isTypeChecked(value)) {
+  if (
+    !isValidTarget(value)
+    || isTypeChecked(value)
+    || isIgnoredProperty(target, info, property, value)
+  ) {
     return value;
   }
 

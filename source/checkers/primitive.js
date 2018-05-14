@@ -119,7 +119,6 @@ export const replaceIndexedTypeCheck = (target, typeCheckFn) => {
 const PrimitiveTypeChecker = {
   collectTypesOnInit: true,
   areArrayElementsOfSameType: true,
-  ignorePrototypeValues: true,
 
   init(target, errorReporter, cachedTypes = null) {
     let types = {};
@@ -149,10 +148,6 @@ const PrimitiveTypeChecker = {
   },
 
   getProperty(target, name, value, config, sequence) {
-    if(!target.hasOwnProperty(name) && (this.ignorePrototypeValues || value instanceof Function)) {
-      return true;
-    }
-
     if (this.areArrayElementsOfSameType && isIndexAccessTarget(target)) {
       return this.getIndexProperty(target, INDEX, value, config, sequence);
     }

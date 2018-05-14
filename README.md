@@ -43,14 +43,17 @@ Library that reports assignments of values or function arguments, return values 
 ```
 
 ### TODOs
-1. +Add global methods to copy and apply configs, they should work with typeChecker.mergeConfig() method
-2. +Add possibility to merge objects with type information using mergeConfigs()
-3. +Decide, when setting value to a property, should this value be wrapped?
-4. +Decide, when calling function, should arguments and return value be wrapped?
-5. ?Lazy typings for Arrays or apply one type(from first element) for all items.
-   Indexed type is available, still don't know about lazy arrays
-6. +Implement "createDeep()"
-7. Cache child info for arguments
-8. +Add ability to setup custom value validators for default type checker
-9. +Ignore accessing functions from prototype all the time
-10. +Add option to ignore any kind of properties available via prototype
+1.  +Add global methods to copy and apply configs, they should work with typeChecker.mergeConfig() method
+2.  +Add possibility to merge objects with type information using mergeConfigs()
+3.  +Decide, when setting value to a property, should this value be wrapped?
+4.  +Decide, when calling function, should arguments and return value be wrapped?
+5.  ?Lazy typings for Arrays or apply one type(from first element) for all items.
+    Indexed type is available, still don't know about lazy arrays
+6.  +Implement "createDeep()"
+7.  Cache child info for arguments
+8.  +Add ability to setup custom value validators for default type checker
+9.  Ignore accessing functions from prototype all the time
+10. Add option to ignore any kind of properties available via prototype
+11. Implement replaceProperty()
+12. +Add possibility to make proxy config be part of target's info
+13. Move primitive type checker into separate repo

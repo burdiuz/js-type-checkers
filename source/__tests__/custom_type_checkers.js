@@ -1,9 +1,9 @@
 import { setErrorReporter } from '../reporters';
 import { ConsoleWarnReporter } from '../reporters/console';
-import { PrimitiveTypeChecker, setDefaultTypeChecker } from '../checkers';
+import { PrimitiveTypeChecker } from '../checkers';
 import { SET_PROPERTY, GET_PROPERTY, ARGUMENTS, RETURN_VALUE, INDEX } from '../checkers/utils';
-import { getOriginalTarget, TARGET_KEY } from '../target/proxy';
-import { create, isTypeChecked } from '../';
+import { getOriginalTarget } from '../target/proxy';
+import { create } from '../';
 
 describe('Custom Type Checkers', () => {
   const reporter = jest.fn(ConsoleWarnReporter);

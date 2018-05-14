@@ -3,13 +3,22 @@ import {
   getChildInfo,
   storeChildInfoFrom,
 } from '../target/info';
-import { config as proxyConfig } from './config';
+
+import {
+  getProxyConfigValue,
+  PROXY_WRAP_FUNCTION_ARGUMENTS,
+  PROXY_WRAP_FUNCTION_RETURN_VALUES,
+} from './config';
+
 import { isTypeChecked } from '../utils';
+
 import { RETURN_VALUE } from '../checkers/utils';
 
 const getTargetArguments = (createFn, target, argumentsList) => {
-  if (proxyConfig.wrapFunctionArguments) {
-    const { deep, names, checker } = getTargetInfo(target);
+  const info = getTargetInfo(target);
+
+  if (getProxyConfigValue(PROXY_WRAP_FUNCTION_ARGUMENTS, info)) {
+    const { deep, names, checker } = info;
     const { length } = argumentsList;
     // FIXME cache arguments info objects as children
     for (let index = 0; index < length; index++) {
@@ -27,8 +36,10 @@ const getTargetArguments = (createFn, target, argumentsList) => {
   return argumentsList;
 };
 const getTargetReturnValue = (createFn, target, returnValue) => {
-  if (proxyConfig.wrapFunctionReturnValues) {
-    const { deep, names, checker, children } = getTargetInfo(target);
+  const info = getTargetInfo(target);
+
+  if (getProxyConfigValue(PROXY_WRAP_FUNCTION_RETURN_VALUES, info)) {
+    const { deep, names, checker, children } = info;
 
     if (!isTypeChecked(returnValue)) {
       const childInfo = getChildInfo(children, RETURN_VALUE);

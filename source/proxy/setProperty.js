@@ -5,9 +5,18 @@ import {
   storeChildInfoFrom,
   mergeTargetInfo,
 } from '../target/info';
+
+import {
+  getProxyConfigValue,
+  PROXY_WRAP_SET_PROPERTY_VALUES,
+} from './config';
+
+import {
+  isValidTarget,
+  isTypeChecked,
+} from '../utils';
+
 import { TARGET_KEY } from '../target/proxy';
-import { config as proxyConfig } from './config';
-import { isValidTarget, isTypeChecked } from '../utils';
 
 const setNonTargetProperty = (target, property, value) => {
   if (property === INFO_KEY) {
@@ -35,13 +44,14 @@ const setNonTargetProperty = (target, property, value) => {
 };
 
 const setTargetProperty = (createFn, target, property, value) => {
-  const { deep, names, checker, config, children } = getTargetInfo(target);
+  const info = getTargetInfo(target);
+  const { deep, names, checker, config, children } = info;
 
   if (checker.setProperty) {
     checker.setProperty(target, property, value, config, names);
   }
 
-  if (proxyConfig.wrapSetPropertyValues) {
+  if (getProxyConfigValue(PROXY_WRAP_SET_PROPERTY_VALUES, info)) {
     if (!isTypeChecked(value)) {
       const childInfo = getChildInfo(children, property);
 

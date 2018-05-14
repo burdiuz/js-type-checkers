@@ -35,6 +35,8 @@ import { getOriginalTarget } from './target/proxy';
 
 import objectMerge from './target/objectMerge';
 
+import replaceProperty from './target/replaceProperty';
+
 import {
   getProxyConfig,
   setProxyConfig,
@@ -68,6 +70,7 @@ export {
   mergeTargetInfo,
   getOriginalTarget,
   objectMerge,
+  replaceProperty,
   getProxyConfig,
   setProxyConfig,
   create,

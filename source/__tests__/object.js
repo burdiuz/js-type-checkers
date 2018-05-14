@@ -2,6 +2,8 @@ import { setErrorReporter } from '../reporters';
 import { PrimitiveTypeChecker, setDefaultTypeChecker } from '../checkers';
 import { SET_PROPERTY, GET_PROPERTY, INDEX, ARGUMENTS, RETURN_VALUE } from '../checkers/utils';
 import { create, isEnabled, isTypeChecked, setEnabled, getTargetInfo, getTargetTypeCheckerConfig, setTargetInfo } from '../';
+import { TARGET_KEY, getOriginalTarget } from '../target/proxy';
+import { INFO_KEY } from '../target/info';
 
 describe('Object', () => {
   const reporter = jest.fn();
@@ -290,8 +292,40 @@ describe('Object', () => {
   });
 
   describe('When accessing original object', () => {
+    beforeEach(() => {
+      PrimitiveTypeChecker.collectTypesOnInit = true;
+      target = create({
+        numberValue: 12,
+        stringValue: 'my string',
+      });
+    });
+
+    it('should be possible to access target object', () => {
+      expect(getOriginalTarget(target)).toEqual({
+        numberValue: 12,
+        stringValue: 'my string',
+        [INFO_KEY]: expect.any(Object),
+      });
+    });
+
+    describe('When original object updated directly', () => {
+      beforeEach(() => {
+        getOriginalTarget(target).numberValue = '44';
+        (() => null)(target.numberValue);
+      });
+
+      it('should report type error when accessing updated property', () => {
+        expect(reporter).toHaveBeenCalledTimes(1);
+        expect(reporter).toHaveBeenCalledWith(GET_PROPERTY, 'numberValue', 'number', 'string');
+      });
+    });
 
     describe('When reset original object', () => {
+      it('should throw error', () => {
+        expect(() => {
+          target[TARGET_KEY] = { numberValue: 15 };
+        }).toThrow();
+      });
 
     });
   });
