@@ -1,9 +1,9 @@
 import { setErrorReporter } from '../reporters';
 import { PrimitiveTypeChecker, setDefaultTypeChecker } from '../checkers';
-import { SET_PROPERTY, GET_PROPERTY } from '../checkers/utils';
-import { create, isEnabled, isTypeChecked, setEnabled } from '../';
+import { SET_PROPERTY, GET_PROPERTY, INDEX, ARGUMENTS, RETURN_VALUE } from '../checkers/utils';
+import { create, isEnabled, isTypeChecked, setEnabled, getTargetInfo, getTargetTypeCheckerConfig, setTargetInfo } from '../';
 
-describe('Set Property', () => {
+describe('Object', () => {
   const reporter = jest.fn();
   let target;
 
@@ -21,7 +21,7 @@ describe('Set Property', () => {
         booleanValue: true,
         arrayValue: [1, 2, 3],
         objectValue: { val1: 1, val2: '2', val3: true },
-        method: () => false,
+        method: (a) => !!a,
       });
     });
 
@@ -48,6 +48,55 @@ describe('Set Property', () => {
         expect(reporter).toHaveBeenCalledWith(SET_PROPERTY, 'stringValue', 'string', 'boolean');
         expect(reporter).toHaveBeenCalledWith(SET_PROPERTY, 'arrayValue', 'array', 'object');
         expect(reporter).toHaveBeenCalledWith(SET_PROPERTY, 'objectValue', 'object', 'array');
+      });
+    });
+
+    describe('When calling method', () => {
+      beforeEach(() => {
+        expect(target.method(1)).toBe(true);
+      });
+
+      it('should not report any errors', () => {
+        expect(reporter).not.toHaveBeenCalled();
+      });
+
+      describe('When calling method with same argument types', () => {
+        beforeEach(() => {
+          expect(target.method(0)).toBe(false);
+        });
+
+        it('should not report any errors', () => {
+          expect(reporter).not.toHaveBeenCalled();
+        });
+      });
+
+      describe('When calling method with mismatched argument types', () => {
+        beforeEach(() => {
+          expect(target.method('0')).toBe(true);
+        });
+
+        it('should report call errors', () => {
+          expect(reporter).toHaveBeenCalledTimes(1);
+          expect(reporter).toHaveBeenCalledWith(ARGUMENTS, 'method[0]', 'number', 'string');
+        });
+      });
+
+      describe('When method is replaced in runtime', () => {
+        beforeEach(() => {
+          target.method = (b) => ++b;
+        });
+
+        describe('When calling method with mismatched argument types', () => {
+          beforeEach(() => {
+            expect(target.method('5')).toBe(6);
+          });
+
+          it('should report call errors', () => {
+            expect(reporter).toHaveBeenCalledTimes(2);
+            expect(reporter).toHaveBeenCalledWith(ARGUMENTS, 'method[0]', 'number', 'string');
+            expect(reporter).toHaveBeenCalledWith(RETURN_VALUE, `method${RETURN_VALUE}`, 'boolean', 'number');
+          });
+        });
       });
     });
   });
@@ -115,15 +164,26 @@ describe('Set Property', () => {
 
     describe('When accessing descendants', () => {
       beforeEach(() => {
-        //expect(target.objectValue.val1).toBe(1);
-        console.log(isTypeChecked(target.arrayValue), target.arrayValue);
+        expect(target.objectValue.val1).toBe(1);
+        expect(target.arrayValue[2]).toBe(3);
         target.arrayValue[2] = '5';
         target.objectValue.val1 = 'any string';
       });
 
-      it.only('should report type violation', () => {
-        console.log(reporter.mock.calls);
-        //expect(reporter);
+      it('should report type violation', () => {
+        expect(reporter).toHaveBeenCalledTimes(2);
+        expect(reporter).toHaveBeenCalledWith(
+          SET_PROPERTY,
+          `arrayValue${INDEX}`,
+          'number',
+          'string',
+        );
+        expect(reporter).toHaveBeenCalledWith(
+          SET_PROPERTY,
+          'objectValue.val1',
+          'number',
+          'string',
+        );
       });
     });
   });
@@ -144,6 +204,17 @@ describe('Set Property', () => {
 
     it('should have methods type checked', () => {
       expect(isTypeChecked(target.method)).toBe(true);
+    });
+
+    describe('When accessing descendants', () => {
+      beforeEach(() => {
+        target.arrayValue[2] = '5';
+        target.objectValue.val1 = 'any string';
+      });
+
+      it('should ignore type violation', () => {
+        expect(reporter).not.toHaveBeenCalled();
+      });
     });
   });
 
@@ -170,6 +241,58 @@ describe('Set Property', () => {
 
     it('should not check types', () => {
       expect(reporter).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('When accessing types information', () => {
+    beforeEach(() => {
+      PrimitiveTypeChecker.collectTypesOnInit = true;
+      target = create({
+        numberValue: 12,
+        stringValue: 'my string',
+      });
+    });
+
+    it('should contain collection with primitive types', () => {
+      expect(getTargetInfo(target)).toMatchSnapshot();
+      expect(getTargetTypeCheckerConfig(target).types).toEqual({
+        numberValue: 'number',
+        stringValue: 'string',
+      });
+    });
+
+    describe('When writing types information', () => {
+      beforeEach(() => {
+        const newTarget = create({
+          booleanValue: true,
+          arrayValue: [1, 2, 3],
+          objectValue: { val1: 1, val2: '2', val3: true },
+        });
+
+        // init children types
+        (() => null)(newTarget.arrayValue, newTarget.objectValue);
+
+        // merge types
+        setTargetInfo(target, getTargetInfo(newTarget));
+      });
+
+      it('should contain collection with primitive types', () => {
+        expect(getTargetInfo(target)).toMatchSnapshot();
+        expect(getTargetTypeCheckerConfig(target).types).toEqual({
+          numberValue: 'number',
+          stringValue: 'string',
+          booleanValue: 'boolean',
+          arrayValue: 'array',
+          objectValue: 'object',
+        });
+      });
+    });
+  });
+
+  describe('When accessing original object', () => {
+
+    describe('When reset original object', () => {
+
     });
   });
 });

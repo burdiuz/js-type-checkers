@@ -21,6 +21,12 @@ const setNonTargetProperty = (target, property, value) => {
     target[property] = info;
     return true;
   } else if (!isValidTarget(value)) {
+    const { names, config, checker } = getTargetInfo(target);
+
+    if (checker.setProperty) {
+      checker.setProperty(target, property, value, config, names);
+    }
+
     target[property] = value;
     return true;
   }
@@ -29,9 +35,13 @@ const setNonTargetProperty = (target, property, value) => {
 };
 
 const setTargetProperty = (createFn, target, property, value) => {
-  if (proxyConfig.wrapSetPropertyValues) {
-    const { deep, names, checker, children } = getTargetInfo(target);
+  const { deep, names, checker, config, children } = getTargetInfo(target);
 
+  if (checker.setProperty) {
+    checker.setProperty(target, property, value, config, names);
+  }
+
+  if (proxyConfig.wrapSetPropertyValues) {
     if (!isTypeChecked(value)) {
       const childInfo = getChildInfo(children, property);
 
@@ -52,12 +62,6 @@ const setTargetProperty = (createFn, target, property, value) => {
 const setProperty = (createFn) => (target, property, value) => {
   if (property === TARGET_KEY) {
     throw new Error(`"${TARGET_KEY}" is a virtual property and cannot be set`);
-  }
-
-  const { names, config, checker } = getTargetInfo(target);
-
-  if (checker.setProperty) {
-    checker.setProperty(target, property, value, config, names);
   }
 
   return setNonTargetProperty(target, property, value)

@@ -63,7 +63,13 @@
 
   const getTargetTypeChecker = target => target && target[INFO_KEY] ? target[INFO_KEY].checker : undefined;
 
-  const getTargetTypeCheckerConfig = target => target && target[INFO_KEY] ? target[INFO_KEY].config : undefined;
+  const getTargetTypeCheckerConfig = target => {
+    if (!target || !target[INFO_KEY]) {
+      return undefined;
+    }
+
+    return target[INFO_KEY].config;
+  };
 
   const createChildrenCache = (children = {}) => Object.assign({}, children);
 
@@ -156,6 +162,8 @@
         }
       }
     }
+
+    return { types, errorReporter };
   };
 
   const replacePropertyTypeCheck = (target, name, typeCheckFn) => {
@@ -212,7 +220,7 @@
   const PrimitiveTypeChecker = {
     collectTypesOnInit: true,
     areArrayElementsOfSameType: true,
-    ignorePrototypeValues: false,
+    ignorePrototypeValues: true,
 
     init(target, errorReporter, cachedTypes = null) {
       let types = {};
@@ -223,7 +231,7 @@
         if (this.areArrayElementsOfSameType && target instanceof Array) {
           const indexType = getTypeString(target.find(item => typeof item !== 'undefined'));
 
-          if (indexType !== 'undefined') {
+          if (indexType) {
             types[INDEX] = indexType;
           }
         } else {
@@ -468,6 +476,12 @@
       target[property] = info;
       return true;
     } else if (!isValidTarget(value)) {
+      const { names, config: config$$1, checker } = getTargetInfo(target);
+
+      if (checker.setProperty) {
+        checker.setProperty(target, property, value, config$$1, names);
+      }
+
       target[property] = value;
       return true;
     }
@@ -476,9 +490,13 @@
   };
 
   const setTargetProperty = (createFn, target, property, value) => {
-    if (config.wrapSetPropertyValues) {
-      const { deep, names, checker, children } = getTargetInfo(target);
+    const { deep, names, checker, config: config$$1, children } = getTargetInfo(target);
 
+    if (checker.setProperty) {
+      checker.setProperty(target, property, value, config$$1, names);
+    }
+
+    if (config.wrapSetPropertyValues) {
       if (!isTypeChecked(value)) {
         const childInfo = getChildInfo(children, property);
 
@@ -499,12 +517,6 @@
   const setProperty = createFn => (target, property, value) => {
     if (property === TARGET_KEY) {
       throw new Error(`"${TARGET_KEY}" is a virtual property and cannot be set`);
-    }
-
-    const { names, config: config$$1, checker } = getTargetInfo(target);
-
-    if (checker.setProperty) {
-      checker.setProperty(target, property, value, config$$1, names);
     }
 
     return setNonTargetProperty(target, property, value) || setTargetProperty(createFn, target, property, value);

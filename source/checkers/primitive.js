@@ -61,6 +61,8 @@ export const mergeConfigs = ({ types, errorReporter }, source, names = []) => {
       }
     }
   }
+
+  return { types, errorReporter };
 };
 
 export const replacePropertyTypeCheck = (target, name, typeCheckFn) => {
@@ -117,7 +119,7 @@ export const replaceIndexedTypeCheck = (target, typeCheckFn) => {
 const PrimitiveTypeChecker = {
   collectTypesOnInit: true,
   areArrayElementsOfSameType: true,
-  ignorePrototypeValues: false,
+  ignorePrototypeValues: true,
 
   init(target, errorReporter, cachedTypes = null) {
     let types = {};
@@ -129,7 +131,7 @@ const PrimitiveTypeChecker = {
         const indexType = getTypeString(target
         .find((item) => (typeof item !== 'undefined')));
 
-        if (indexType !== 'undefined') {
+        if (indexType) {
           types[INDEX] = indexType;
         }
       } else {

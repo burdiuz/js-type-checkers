@@ -27,8 +27,13 @@ export const hasTargetInfo = (target) => !!getTargetInfo(target);
 export const getTargetTypeChecker = (target) =>
   (target && target[INFO_KEY] ? target[INFO_KEY].checker : undefined);
 
-export const getTargetTypeCheckerConfig = (target) =>
-  (target && target[INFO_KEY] ? target[INFO_KEY].config : undefined);
+export const getTargetTypeCheckerConfig = (target) => {
+  if (!target || !target[INFO_KEY]) {
+    return undefined;
+  }
+
+  return target[INFO_KEY].config;
+};
 
 export const createChildrenCache = (children = {}) => ({ ...children });
 
