@@ -24,14 +24,10 @@ const getTargetProperty = (createFn, target, property, value) => {
   if (deep || value instanceof Function) {
     const childInfo = getChildInfo(children, property);
 
-    // FIXME somehow method does not store children info
-    console.log(property, childInfo);
-
     if (childInfo) {
       value = createFn(value, { info: childInfo });
     } else {
       value = createFn(value, { deep, names: [...names, property], checker });
-      console.log('STORE:', value);
       storeChildInfoFrom(children, property, value);
     }
   }

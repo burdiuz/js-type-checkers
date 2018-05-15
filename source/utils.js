@@ -5,5 +5,5 @@ const validTypes = {
   function: true,
 };
 
-export const isValidTarget = (target) => target && validTypes[typeof target];
+export const isValidTarget = (target) => Boolean(target && validTypes[typeof target]);
 export const isTypeChecked = (target) => Boolean(target && target[TARGET_KEY]);

@@ -220,7 +220,6 @@
   const PrimitiveTypeChecker = {
     collectTypesOnInit: true,
     areArrayElementsOfSameType: true,
-    ignorePrototypeValues: true,
 
     init(target, errorReporter, cachedTypes = null) {
       let types = {};
@@ -248,10 +247,6 @@
     },
 
     getProperty(target, name, value, config, sequence) {
-      if (!target.hasOwnProperty(name) && (this.ignorePrototypeValues || value instanceof Function)) {
-        return true;
-      }
-
       if (this.areArrayElementsOfSameType && isIndexAccessTarget(target)) {
         return this.getIndexProperty(target, INDEX, value, config, sequence);
       }
@@ -401,22 +396,32 @@
     return target[TARGET_KEY] || target;
   };
 
-  const config = {
-    wrapFunctionReturnValues: true,
-    wrapFunctionArguments: false,
-    wrapSetPropertyValues: true
-  };
+  const PROXY_WRAP_FUNCTION_RETURN_VALUES = 'wrapFunctionReturnValues';
+  const PROXY_WRAP_FUNCTION_ARGUMENTS = 'wrapFunctionArguments';
+  const PROXY_WRAP_SET_PROPERTY_VALUES = 'wrapSetPropertyValues';
+  const PROXY_IGNORE_PROTOTYPE_METHODS = 'ignorePrototypeMethods';
+
+  const getDefaultProxyConfig = () => ({
+    [PROXY_WRAP_FUNCTION_RETURN_VALUES]: true,
+    [PROXY_WRAP_FUNCTION_ARGUMENTS]: false,
+    [PROXY_WRAP_SET_PROPERTY_VALUES]: true,
+    [PROXY_IGNORE_PROTOTYPE_METHODS]: false
+  });
+
+  const config = getDefaultProxyConfig();
 
   const setProxyConfig = newConfig => Object.assign(config, newConfig);
 
   const getProxyConfig = () => Object.assign({}, config);
+
+  const getProxyConfigValue = (key, info = null) => info && info.hasOwnProperty(key) ? info[key] : config[key];
 
   const validTypes = {
     object: true,
     function: true
   };
 
-  const isValidTarget = target => target && validTypes[typeof target];
+  const isValidTarget = target => Boolean(target && validTypes[typeof target]);
   const isTypeChecked = target => Boolean(target && target[TARGET_KEY]);
 
   const getTargetProperty = (createFn, target, property, value) => {
@@ -435,6 +440,14 @@
     }
 
     return value;
+  };
+
+  const isIgnoredProperty = (target, info, property, value) => {
+    if (value instanceof Function && !target.hasOwnProperty(property) && getProxyConfigValue(PROXY_IGNORE_PROTOTYPE_METHODS, info)) {
+      return true;
+    }
+
+    return false;
   };
 
   const getProperty = createFn => (target, property) => {
@@ -457,7 +470,7 @@
       checker.getProperty(target, property, value, config, names);
     }
 
-    if (!isValidTarget(value) || isTypeChecked(value)) {
+    if (!isValidTarget(value) || isTypeChecked(value) || isIgnoredProperty(target, info, property, value)) {
       return value;
     }
 
@@ -476,10 +489,10 @@
       target[property] = info;
       return true;
     } else if (!isValidTarget(value)) {
-      const { names, config: config$$1, checker } = getTargetInfo(target);
+      const { names, config, checker } = getTargetInfo(target);
 
       if (checker.setProperty) {
-        checker.setProperty(target, property, value, config$$1, names);
+        checker.setProperty(target, property, value, config, names);
       }
 
       target[property] = value;
@@ -490,13 +503,14 @@
   };
 
   const setTargetProperty = (createFn, target, property, value) => {
-    const { deep, names, checker, config: config$$1, children } = getTargetInfo(target);
+    const info = getTargetInfo(target);
+    const { deep, names, checker, config, children } = info;
 
     if (checker.setProperty) {
-      checker.setProperty(target, property, value, config$$1, names);
+      checker.setProperty(target, property, value, config, names);
     }
 
-    if (config.wrapSetPropertyValues) {
+    if (getProxyConfigValue(PROXY_WRAP_SET_PROPERTY_VALUES, info)) {
       if (!isTypeChecked(value)) {
         const childInfo = getChildInfo(children, property);
 
@@ -522,59 +536,64 @@
     return setNonTargetProperty(target, property, value) || setTargetProperty(createFn, target, property, value);
   };
 
+  const getTypeCheckedChild = (createFn, info, name, value) => {
+    if (!isValidTarget(value)) {
+      return value;
+    }
+
+    let result = value;
+
+    if (!isTypeChecked(value)) {
+      const { children } = info;
+      const childInfo = getChildInfo(children, name);
+
+      if (childInfo) {
+        result = createFn(value, { info: childInfo });
+      } else {
+        const { deep, names, checker } = info;
+        result = createFn(value, { deep, names: [...names, name], checker });
+        storeChildInfoFrom(children, name, result);
+      }
+    }
+
+    return result;
+  };
+
   const getTargetArguments = (createFn, target, argumentsList) => {
-    if (config.wrapFunctionArguments) {
-      const { deep, names, checker } = getTargetInfo(target);
+    const info = getTargetInfo(target);
+
+    if (getProxyConfigValue(PROXY_WRAP_FUNCTION_ARGUMENTS, info)) {
       const { length } = argumentsList;
       // FIXME cache arguments info objects as children
       for (let index = 0; index < length; index++) {
-        argumentsList[index] = createFn(argumentsList[index], {
-          deep,
-          names: [...names, index],
-          checker
-        });
+        argumentsList[index] = getTypeCheckedChild(createFn, info, String(index), argumentsList[index]);
       }
     }
 
     return argumentsList;
   };
-  const getTargetReturnValue = (createFn, target, returnValue) => {
-    if (config.wrapFunctionReturnValues) {
-      const { deep, names, checker, children } = getTargetInfo(target);
-
-      if (!isTypeChecked(returnValue)) {
-        const childInfo = getChildInfo(children, RETURN_VALUE);
-
-        if (childInfo) {
-          returnValue = createFn(returnValue, { info: childInfo });
-        } else {
-          returnValue = createFn(returnValue, { deep, names: [...names], checker });
-        }
-      }
-
-      storeChildInfoFrom(children, RETURN_VALUE, returnValue);
-    }
-
-    return returnValue;
-  };
 
   const callFunction = createFn => (target, thisArg, argumentsList) => {
     const info = getTargetInfo(target);
-    const { names, config: config$$1, checker } = info;
+    const { names, config, checker } = info;
 
     if (checker.arguments) {
-      checker.arguments(target, thisArg, argumentsList, config$$1, names);
+      checker.arguments(target, thisArg, argumentsList, config, names);
     }
 
     argumentsList = getTargetArguments(createFn, target, argumentsList);
 
-    const result = target.apply(thisArg, argumentsList);
+    let result = target.apply(thisArg, argumentsList);
 
     if (checker.returnValue) {
-      checker.returnValue(target, thisArg, result, config$$1, names);
+      checker.returnValue(target, thisArg, result, config, names);
     }
 
-    return getTargetReturnValue(createFn, target, result);
+    if (getProxyConfigValue(PROXY_WRAP_FUNCTION_RETURN_VALUES, info)) {
+      result = getTypeCheckedChild(createFn, info, new AsIs(RETURN_VALUE), result);
+    }
+
+    return result;
   };
 
   let getProperty$1;
@@ -678,6 +697,17 @@
     return Object.assign(target, ...sources);
   };
 
+  // TODO if enabled, replaces original value with type checked
+  const replaceProperty = (target, name, options) => {
+    const value = target[name];
+
+    if (!isEnabled() || !isValidTarget(value) || isTypeChecked(value)) {
+      return target;
+    }
+
+    return target;
+  };
+
   exports.PrimitiveTypeChecker = PrimitiveTypeChecker;
   exports.getDefaultTypeChecker = getDefaultTypeChecker;
   exports.setDefaultTypeChecker = setDefaultTypeChecker;
@@ -696,6 +726,7 @@
   exports.mergeTargetInfo = mergeTargetInfo;
   exports.getOriginalTarget = getOriginalTarget;
   exports.objectMerge = objectMerge;
+  exports.replaceProperty = replaceProperty;
   exports.getProxyConfig = getProxyConfig;
   exports.setProxyConfig = setProxyConfig;
   exports.create = create;

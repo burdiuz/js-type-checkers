@@ -12,49 +12,21 @@ import {
 
 import { isTypeChecked } from '../utils';
 
-import { RETURN_VALUE } from '../checkers/utils';
+import { RETURN_VALUE, AsIs } from '../checkers/utils';
+import { getTypeCheckedChild } from './utils';
 
 const getTargetArguments = (createFn, target, argumentsList) => {
   const info = getTargetInfo(target);
 
   if (getProxyConfigValue(PROXY_WRAP_FUNCTION_ARGUMENTS, info)) {
-    const { deep, names, checker } = info;
     const { length } = argumentsList;
     // FIXME cache arguments info objects as children
     for (let index = 0; index < length; index++) {
-      argumentsList[index] = createFn(
-        argumentsList[index],
-        {
-          deep,
-          names: [...names, index],
-          checker,
-        },
-      );
+      argumentsList[index] = getTypeCheckedChild(createFn, info, String(index), argumentsList[index]);
     }
   }
 
   return argumentsList;
-};
-const getTargetReturnValue = (createFn, target, returnValue) => {
-  const info = getTargetInfo(target);
-
-  if (getProxyConfigValue(PROXY_WRAP_FUNCTION_RETURN_VALUES, info)) {
-    const { deep, names, checker, children } = info;
-
-    if (!isTypeChecked(returnValue)) {
-      const childInfo = getChildInfo(children, RETURN_VALUE);
-
-      if (childInfo) {
-        returnValue = createFn(returnValue, { info: childInfo });
-      } else {
-        returnValue = createFn(returnValue, { deep, names: [...names], checker });
-      }
-    }
-
-    storeChildInfoFrom(children, RETURN_VALUE, returnValue);
-  }
-
-  return returnValue;
 };
 
 const callFunction = (createFn) => (target, thisArg, argumentsList) => {
@@ -67,13 +39,17 @@ const callFunction = (createFn) => (target, thisArg, argumentsList) => {
 
   argumentsList = getTargetArguments(createFn, target, argumentsList);
 
-  const result = target.apply(thisArg, argumentsList);
+  let result = target.apply(thisArg, argumentsList);
 
   if (checker.returnValue) {
     checker.returnValue(target, thisArg, result, config, names);
   }
 
-  return getTargetReturnValue(createFn, target, result);
+  if (getProxyConfigValue(PROXY_WRAP_FUNCTION_RETURN_VALUES, info)) {
+    result = getTypeCheckedChild(createFn, info, new AsIs(RETURN_VALUE), result);
+  }
+
+  return result;
 };
 
 export default callFunction;
