@@ -1,5 +1,5 @@
 {
-  "name": "js-type-checkers",
+  "name": "@actualwave/type-checkers",
   "description": "",
   "version": "0.1.5",
   "main": "dist/type-checkers.js",
