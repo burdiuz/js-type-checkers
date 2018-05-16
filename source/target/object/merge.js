@@ -1,11 +1,11 @@
 import {
   getTargetInfo,
   hasTargetInfo,
-} from './info';
+} from '../info';
 
-import { create } from '../proxy';
+import create from '../../proxy/create';
 
-import { isEnabled } from '../enabled';
+import { isEnabled } from '../../enabled';
 
 const objectMerge = (options, ...sources) => {
   let target = {};

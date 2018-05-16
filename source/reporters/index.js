@@ -1,7 +1,21 @@
-import { ConsoleErrorReporter } from './console';
+import {
+  ConsoleErrorReporter,
+  ConsoleWarnReporter,
+} from './console';
+import { ThrowErrorReporter } from './error';
 
 let errorReporter = ConsoleErrorReporter;
 
-export const getErrorReporter = () => errorReporter;
+const getErrorReporter = () => errorReporter;
 
-export const setErrorReporter = (reporter) => errorReporter = reporter;
+const setErrorReporter = (reporter) => {
+  errorReporter = reporter;
+};
+
+export {
+  ConsoleErrorReporter,
+  ConsoleWarnReporter,
+  ThrowErrorReporter,
+  getErrorReporter,
+  setErrorReporter,
+};

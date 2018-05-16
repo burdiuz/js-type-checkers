@@ -1,3 +1,5 @@
+import has from 'lodash.has';
+
 import {
   INFO_KEY,
   getTargetInfo,
@@ -38,7 +40,7 @@ const getTargetProperty = (createFn, target, property, value) => {
 const isIgnoredProperty = (target, info, property, value) => {
   if (
     value instanceof Function
-    && !target.hasOwnProperty(property)
+    && !has(target, property)
     && getProxyConfigValue(PROXY_IGNORE_PROTOTYPE_METHODS, info)
   ) {
     return true;

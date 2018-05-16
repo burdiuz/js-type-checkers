@@ -1,4 +1,8 @@
+import has from 'lodash.has';
+
 export const INFO_KEY = Symbol('type-checkers::info');
+
+export const createChildrenCache = (children = {}) => ({ ...children });
 
 export const createTargetInfo = (
   checker,
@@ -35,11 +39,9 @@ export const getTargetTypeCheckerConfig = (target) => {
   return target[INFO_KEY].config;
 };
 
-export const createChildrenCache = (children = {}) => ({ ...children });
-
 export const mergeChildrenCache = (targetCache, sourceCache) => {
   for (const name in sourceCache) {
-    if (targetCache.hasOwnProperty(name)) {
+    if (has(targetCache, name)) {
       targetCache[name] = mergeTargetInfo(targetCache[name], sourceCache[name]);
     } else {
       targetCache[name] = sourceCache[name];

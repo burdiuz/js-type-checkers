@@ -4,15 +4,21 @@ import {
 } from './checkers';
 
 import {
+  PROXY_WRAP_FUNCTION_RETURN_VALUES,
+  PROXY_WRAP_FUNCTION_ARGUMENTS,
+  PROXY_WRAP_SET_PROPERTY_VALUES,
+  PROXY_IGNORE_PROTOTYPE_METHODS,
+  getDefaultProxyConfig,
+  setProxyConfig,
+  getProxyConfig,
+  create,
+  createDeep,
+} from './proxy';
+
+import {
   ConsoleErrorReporter,
   ConsoleWarnReporter,
-} from './reporters/console';
-
-import {
   ThrowErrorReporter,
-} from './reporters/error';
-
-import {
   getErrorReporter,
   setErrorReporter,
 } from './reporters';
@@ -24,57 +30,55 @@ import {
 
 import {
   getTargetInfo,
-  hasTargetInfo,
   setTargetInfo,
+  hasTargetInfo,
   getTargetTypeChecker,
   getTargetTypeCheckerConfig,
   mergeTargetInfo,
-} from './target/info';
-
-import { getOriginalTarget } from './target/proxy';
-
-import objectMerge from './target/objectMerge';
-
-import replaceProperty from './target/replaceProperty';
-
-import {
-  getProxyConfig,
-  setProxyConfig,
-  create,
-  createDeep,
-} from './proxy';
+  getOriginalTarget,
+  merge,
+  properties,
+} from './target';
 
 import {
   isTypeChecked,
   isValidTarget,
 } from './utils';
 
-import PrimitiveTypeChecker from './checkers/primitive';
-
 export {
-  PrimitiveTypeChecker,
+  //  checkers
   getDefaultTypeChecker,
   setDefaultTypeChecker,
+  // proxy
+  PROXY_WRAP_FUNCTION_RETURN_VALUES,
+  PROXY_WRAP_FUNCTION_ARGUMENTS,
+  PROXY_WRAP_SET_PROPERTY_VALUES,
+  PROXY_IGNORE_PROTOTYPE_METHODS,
+  getDefaultProxyConfig,
+  setProxyConfig,
+  getProxyConfig,
+  create,
+  createDeep,
+  // reporters
   ConsoleErrorReporter,
   ConsoleWarnReporter,
   ThrowErrorReporter,
   getErrorReporter,
   setErrorReporter,
+  // enabled
   isEnabled,
   setEnabled,
+  // target
   getTargetInfo,
-  hasTargetInfo,
   setTargetInfo,
+  hasTargetInfo,
   getTargetTypeChecker,
   getTargetTypeCheckerConfig,
   mergeTargetInfo,
   getOriginalTarget,
-  objectMerge,
-  replaceProperty,
-  getProxyConfig,
-  setProxyConfig,
-  create,
-  createDeep,
+  merge,
+  properties,
+  // utils
   isTypeChecked,
   isValidTarget,
 };

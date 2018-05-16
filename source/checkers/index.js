@@ -1,6 +1,4 @@
-import PrimitiveTypeChecker from './primitive';
-
-let defaultTypeChecker = PrimitiveTypeChecker;
+let defaultTypeChecker = null;
 
 const getDefaultTypeChecker = () => defaultTypeChecker;
 const setDefaultTypeChecker = (typeChecker) => {
@@ -8,7 +6,6 @@ const setDefaultTypeChecker = (typeChecker) => {
 };
 
 export {
-  PrimitiveTypeChecker,
   getDefaultTypeChecker,
   setDefaultTypeChecker,
 };

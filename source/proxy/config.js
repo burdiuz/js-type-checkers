@@ -1,3 +1,5 @@
+import has from 'lodash.has';
+
 export const PROXY_WRAP_FUNCTION_RETURN_VALUES = 'wrapFunctionReturnValues';
 export const PROXY_WRAP_FUNCTION_ARGUMENTS = 'wrapFunctionArguments';
 export const PROXY_WRAP_SET_PROPERTY_VALUES = 'wrapSetPropertyValues';
@@ -17,4 +19,4 @@ export const setProxyConfig = (newConfig) => Object.assign(config, newConfig);
 export const getProxyConfig = () => ({ ...config });
 
 export const getProxyConfigValue = (key, info = null) =>
-  (info && info.hasOwnProperty(key) ? info[key] : config[key]);
+  (has(info, key) ? info[key] : config[key]);
