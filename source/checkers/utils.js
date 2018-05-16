@@ -1,10 +1,8 @@
 
 export const GET_PROPERTY = '(GetProperty)';
 export const SET_PROPERTY = '(SetProperty)';
-export const INDEX = '(Index)';
 export const ARGUMENTS = '(Arguments)';
 export const RETURN_VALUE = '(ReturnValue)';
-export const MERGE = '(Merge)';
 
 export function AsIs(value) {
   if (this instanceof AsIs) {

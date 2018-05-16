@@ -1,9 +1,7 @@
 const GET_PROPERTY = '(GetProperty)';
 const SET_PROPERTY = '(SetProperty)';
-const INDEX = '(Index)';
 const ARGUMENTS = '(Arguments)';
 const RETURN_VALUE = '(ReturnValue)';
-const MERGE = '(Merge)';
 
 function AsIs(value) {
   if (this instanceof AsIs) {
@@ -35,5 +33,5 @@ const buildPath = sequence => sequence.reduce((str, name) => {
   return str;
 }, '');
 
-export { GET_PROPERTY, SET_PROPERTY, INDEX, ARGUMENTS, RETURN_VALUE, MERGE, AsIs, buildPath };
+export { GET_PROPERTY, SET_PROPERTY, ARGUMENTS, RETURN_VALUE, AsIs, buildPath };
 //# sourceMappingURL=checkers.js.map
