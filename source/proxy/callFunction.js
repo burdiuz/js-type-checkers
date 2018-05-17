@@ -1,18 +1,11 @@
-import {
-  getTargetInfo,
-  getChildInfo,
-  storeChildInfoFrom,
-} from '../target/info';
+import { getTargetInfo } from '../target/info';
 
 import {
   getProxyConfigValue,
   PROXY_WRAP_FUNCTION_ARGUMENTS,
-  PROXY_WRAP_FUNCTION_RETURN_VALUES,
+  PROXY_WRAP_FUNCTION_RETURN_VALUES
 } from './config';
 
-import { isTypeChecked } from '../utils';
-
-import { RETURN_VALUE, AsIs } from '../checkers/utils';
 import { getTypeCheckedChild } from './utils';
 
 const getTargetArguments = (createFn, target, argumentsList) => {
@@ -22,7 +15,12 @@ const getTargetArguments = (createFn, target, argumentsList) => {
     const { length } = argumentsList;
     // FIXME cache arguments info objects as children
     for (let index = 0; index < length; index++) {
-      argumentsList[index] = getTypeCheckedChild(createFn, info, String(index), argumentsList[index]);
+      argumentsList[index] = getTypeCheckedChild(
+        createFn,
+        info,
+        String(index),
+        argumentsList[index]
+      );
     }
   }
 
@@ -46,7 +44,7 @@ const callFunction = (createFn) => (target, thisArg, argumentsList) => {
   }
 
   if (getProxyConfigValue(PROXY_WRAP_FUNCTION_RETURN_VALUES, info)) {
-    result = getTypeCheckedChild(createFn, info, new AsIs(RETURN_VALUE), result);
+    result = getTypeCheckedChild(createFn, info, 'returnValue', result);
   }
 
   return result;

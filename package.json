@@ -1,7 +1,7 @@
 {
   "name": "@actualwave/type-checkers",
   "description": "",
-  "version": "0.1.7",
+  "version": "0.1.9",
   "main": "dist/type-checkers.js",
   "keywords": [
     "js",
@@ -22,39 +22,37 @@
     "lodash.has": "^4.5.2"
   },
   "devDependencies": {
-    "babel-core": "^6.26.0",
-    "babel-eslint": "^8.0.1",
-    "babel-loader": "^7.1.2",
+    "babel-core": "^6.26.3",
+    "babel-eslint": "^8.2.3",
+    "babel-loader": "^7.1.4",
     "babel-plugin-external-helpers": "^6.22.0",
-    "babel-plugin-istanbul": "^4.1.5",
+    "babel-plugin-istanbul": "^4.1.6",
     "babel-plugin-transform-class-properties": "^6.24.1",
-    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.0",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.26.2",
     "babel-plugin-transform-flow-strip-types": "^6.22.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
-    "babel-preset-jest": "^22.0.3",
-    "chai": "^4.1.2",
-    "eslint": "^4.9.0",
+    "babel-preset-jest": "^22.4.3",
+    "eslint": "^4.19.1",
     "eslint-config-airbnb": "^16.1.0",
-    "eslint-plugin-import": "^2.8.0",
-    "eslint-plugin-jsx-a11y": "^6.0.2",
-    "eslint-plugin-react": "^7.4.0",
-    "flow-bin": "^0.57.3",
+    "eslint-plugin-import": "^2.11.0",
+    "eslint-plugin-jsx-a11y": "^6.0.3",
+    "eslint-plugin-react": "^7.8.2",
+    "flow-bin": "^0.72.0",
     "husky": "^0.14.3",
-    "jest": "^22.0.4",
-    "lint-staged": "^6.0.0",
-    "prettier": "^1.9.2",
-    "rollup-plugin-babel": "^3.0.3",
-    "rollup-plugin-commonjs": "^8.2.6",
-    "rollup-plugin-json": "^2.3.0",
-    "rollup-plugin-node-resolve": "^3.0.0",
+    "jest": "^22.4.3",
+    "lint-staged": "^7.1.0",
+    "prettier": "^1.12.1",
+    "rollup-plugin-babel": "^3.0.4",
+    "rollup-plugin-commonjs": "^9.1.3",
+    "rollup-plugin-json": "^3.0.0",
+    "rollup-plugin-node-resolve": "^3.3.0",
     "rollup-plugin-serve": "^0.4.2",
-    "rollup-plugin-uglify": "^2.0.1",
-    "uglify-es": "^3.3.3"
+    "rollup-plugin-uglify": "^3.0.0",
+    "uglify-es": "^3.3.9"
   },
   "lint-staged": {
-    "source/**/!(__tests__/).js": "eslint --fix",
-    "{source/**/__tests__/*.js,source/**/__mocks__/*.js}": "eslint -c eslintrc.spec.json --fix",
     "source/**/*.js": [
+      "eslint --fix",
       "prettier --write",
       "git add"
     ]
@@ -102,13 +100,12 @@
     "start": "build",
     "build": "rollup --config",
     "build:watch": "rollup --config --watch \"./source\"",
-    "lint": "./node_modules/.bin/eslint \"source/**/!(__tests__/)*.js\"",
-    "lint:spec": "./node_modules/.bin/eslint -c eslintrc.spec.json \"source/**/__tests__/*.js\"",
+    "lint": "./node_modules/.bin/eslint \"source/**/*.js\"",
     "flow": "./node_modules/.bin/flow",
     "server": "rollup --config rollup.serve.js",
     "test": "jest --colors",
     "test:watch": "jest --colors --watch",
     "lint-staged": "lint-staged",
-    "precommit": "npm run lint-staged && npm run build && npm run test"
+    "precommit": "npm run build && npm run test && npm run lint-staged"
   }
 }

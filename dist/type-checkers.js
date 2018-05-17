@@ -1346,24 +1346,6 @@
     return setNonTargetProperty(target, property, value) || setTargetProperty(createFn, target, property, value);
   };
 
-  const RETURN_VALUE = '(ReturnValue)';
-
-  function AsIs(value) {
-    if (this instanceof AsIs) {
-      this.value = value;
-    } else {
-      return new AsIs(value);
-    }
-  }
-
-  function asIs() {
-    return this.value;
-  }
-
-  AsIs.prototype.toString = asIs;
-  AsIs.prototype.valueOf = asIs;
-  AsIs.prototype[Symbol.toPrimitive] = asIs;
-
   const getTypeCheckedChild = (createFn, info, name, value) => {
     if (!isValidTarget(value)) {
       return value;
@@ -1418,7 +1400,7 @@
     }
 
     if (getProxyConfigValue(PROXY_WRAP_FUNCTION_RETURN_VALUES, info)) {
-      result = getTypeCheckedChild(createFn, info, new AsIs(RETURN_VALUE), result);
+      result = getTypeCheckedChild(createFn, info, 'returnValue', result);
     }
 
     return result;

@@ -6,8 +6,8 @@ import json from 'rollup-plugin-json';
 import uglify from 'rollup-plugin-uglify';
 import { minify } from 'uglify-es';
 
-export const LIBRARY_FILE_NAME = 'type-checkers'; // dummy, replace with project name
-export const LIBRARY_VAR_NAME = 'TypeCheckers'; // dummy, replace with project name
+export const LIBRARY_FILE_NAME = 'type-checkers';
+export const LIBRARY_VAR_NAME = 'TypeCheckers';
 
 export const plugins = [
   resolve(),
@@ -16,7 +16,7 @@ export const plugins = [
     plugins: [
       'babel-plugin-transform-class-properties',
       'babel-plugin-transform-flow-strip-types',
-      ['babel-plugin-transform-object-rest-spread', { 'useBuiltIns': true }],
+      ['babel-plugin-transform-object-rest-spread', { useBuiltIns: true }],
       'babel-plugin-external-helpers',
     ],
     exclude: 'node_modules/**',
@@ -25,23 +25,6 @@ export const plugins = [
   }),
   commonjs(),
   json(),
-];
-
-const createLibPartConfig = (source, destination) => ({
-  input: `source/${source}.js`,
-  output: [
-    {
-      file: `${destination}.js`,
-      sourcemap: true,
-      exports: 'named',
-      format: 'es', // cjs
-    },
-  ],
-  plugins,
-});
-
-export const utilConfigs = [
-  createLibPartConfig('checkers/utils', 'checkers'),
 ];
 
 export const baseConfig = {

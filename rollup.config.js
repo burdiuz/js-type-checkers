@@ -1,7 +1,6 @@
-import { baseConfig, minConfig, utilConfigs } from './rollup.helpers';
+import { baseConfig, minConfig } from './rollup.helpers';
 
 export default [
   baseConfig,
   minConfig,
-  ...utilConfigs,
 ];
