@@ -1,4 +1,4 @@
-import has from 'lodash.has';
+import hasOwn from '@actualwave/hasOwn';
 
 import {
   INFO_KEY,
@@ -40,7 +40,7 @@ const getTargetProperty = (createFn, target, property, value) => {
 const isIgnoredProperty = (target, info, property, value) => {
   if (
     value instanceof Function
-    && !has(target, property)
+    && !hasOwn(target, property)
     && getProxyConfigValue(PROXY_IGNORE_PROTOTYPE_METHODS, info)
   ) {
     return true;

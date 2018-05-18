@@ -1,4 +1,4 @@
-import has from 'lodash.has';
+import hasOwn from '@actualwave/hasOwn';
 
 export const INFO_KEY = Symbol('type-checkers::info');
 
@@ -41,7 +41,7 @@ export const getTargetTypeCheckerConfig = (target) => {
 
 export const mergeChildrenCache = (targetCache, sourceCache) => {
   for (const name in sourceCache) {
-    if (has(targetCache, name)) {
+    if (hasOwn(targetCache, name)) {
       targetCache[name] = mergeTargetInfo(targetCache[name], sourceCache[name]);
     } else {
       targetCache[name] = sourceCache[name];

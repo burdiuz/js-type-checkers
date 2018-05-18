@@ -1,4 +1,4 @@
-import has from 'lodash.has';
+import hasOwn from '@actualwave/hasOwn';
 
 export const PROXY_WRAP_FUNCTION_RETURN_VALUES = 'wrapFunctionReturnValues';
 export const PROXY_WRAP_FUNCTION_ARGUMENTS = 'wrapFunctionArguments';
@@ -19,4 +19,4 @@ export const setProxyConfig = (newConfig) => Object.assign(config, newConfig);
 export const getProxyConfig = () => ({ ...config });
 
 export const getProxyConfigValue = (key, info = null) =>
-  (has(info, key) ? info[key] : config[key]);
+  (hasOwn(info, key) ? info[key] : config[key]);
