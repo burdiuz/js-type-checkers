@@ -39,6 +39,9 @@ export const baseConfig = {
     },
   ],
   plugins,
+  external: [
+    '@actualwave/hasOwn',
+  ],
 };
 
 export const minConfig = {

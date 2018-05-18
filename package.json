@@ -1,7 +1,7 @@
 {
   "name": "@actualwave/type-checkers",
   "description": "",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "main": "dist/type-checkers.js",
   "keywords": [
     "js",
