@@ -1,332 +1,190 @@
-import { setErrorReporter } from '../reporters';
-import { PrimitiveTypeChecker, setDefaultTypeChecker } from '../checkers';
-import { SET_PROPERTY, GET_PROPERTY, INDEX, ARGUMENTS, RETURN_VALUE } from '../checkers/utils';
-import { create, isEnabled, isTypeChecked, setEnabled, getTargetInfo, getTargetTypeCheckerConfig, setTargetInfo } from '../';
-import { TARGET_KEY, getOriginalTarget } from '../target/proxy';
-import { INFO_KEY } from '../target/info';
+import { setDefaultTypeChecker } from '../checkers';
+import {
+  getTargetInfo,
+  getTargetTypeChecker,
+  getTargetTypeCheckerConfig
+} from '../target/info';
+import create from '../proxy/create';
+import { isTypeChecked } from '../utils';
 
 describe('Object', () => {
-  const reporter = jest.fn();
+  let checker;
   let target;
+  let result;
 
   beforeEach(() => {
-    setErrorReporter(reporter);
-    reporter.mockClear();
+    checker = {
+      init: jest.fn(() => ({ type: 'type-checker-config' })),
+      getProperty: jest.fn(),
+      setProperty: jest.fn(),
+      arguments: jest.fn(),
+      returnValue: jest.fn()
+    };
+
+    setDefaultTypeChecker(checker);
   });
 
-  describe('When types pre-initialized', () => {
+  describe('When applied to object', () => {
     beforeEach(() => {
-      PrimitiveTypeChecker.collectTypesOnInit = true;
       target = create({
         numberValue: 12,
         stringValue: 'my string',
         booleanValue: true,
         arrayValue: [1, 2, 3],
         objectValue: { val1: 1, val2: '2', val3: true },
-        method: (a) => !!a,
+        method: (a) => !!a
       });
     });
 
-    describe('When getting values', () => {
-      beforeEach(() => {
-        expect(target.numberValue).toBe(12);
-        expect(target.stringValue).toBe(12);
-        expect(target.booleanValue).toBe(12);
-      });
-    });
-
-    describe('When setting values of mismatched types', () => {
-      beforeEach(() => {
-        target.numberValue = '123';
-        target.stringValue = false;
-        target.booleanValue = false;
-        target.arrayValue = {};
-        target.objectValue = [];
-      });
-
-      it('should report mismatched primitive types', () => {
-        expect(reporter).toHaveBeenCalledTimes(4);
-        expect(reporter).toHaveBeenCalledWith(SET_PROPERTY, 'numberValue', 'number', 'string');
-        expect(reporter).toHaveBeenCalledWith(SET_PROPERTY, 'stringValue', 'string', 'boolean');
-        expect(reporter).toHaveBeenCalledWith(SET_PROPERTY, 'arrayValue', 'array', 'object');
-        expect(reporter).toHaveBeenCalledWith(SET_PROPERTY, 'objectValue', 'object', 'array');
-      });
-    });
-
-    describe('When calling method', () => {
-      beforeEach(() => {
-        expect(target.method(1)).toBe(true);
-      });
-
-      it('should not report any errors', () => {
-        expect(reporter).not.toHaveBeenCalled();
-      });
-
-      describe('When calling method with same argument types', () => {
-        beforeEach(() => {
-          expect(target.method(0)).toBe(false);
-        });
-
-        it('should not report any errors', () => {
-          expect(reporter).not.toHaveBeenCalled();
-        });
-      });
-
-      describe('When calling method with mismatched argument types', () => {
-        beforeEach(() => {
-          expect(target.method('0')).toBe(true);
-        });
-
-        it('should report call errors', () => {
-          expect(reporter).toHaveBeenCalledTimes(1);
-          expect(reporter).toHaveBeenCalledWith(ARGUMENTS, 'method[0]', 'number', 'string');
-        });
-      });
-
-      describe('When method is replaced in runtime', () => {
-        beforeEach(() => {
-          target.method = (b) => ++b;
-        });
-
-        describe('When calling method with mismatched argument types', () => {
-          beforeEach(() => {
-            expect(target.method('5')).toBe(6);
-          });
-
-          it('should report call errors', () => {
-            expect(reporter).toHaveBeenCalledTimes(2);
-            expect(reporter).toHaveBeenCalledWith(ARGUMENTS, 'method[0]', 'number', 'string');
-            expect(reporter).toHaveBeenCalledWith(RETURN_VALUE, `method${RETURN_VALUE}`, 'boolean', 'number');
-          });
-        });
-      });
-    });
-  });
-
-  describe('When types were not initialized', () => {
-    beforeEach(() => {
-      PrimitiveTypeChecker.collectTypesOnInit = false;
-      target = create({
-        numberValue: 12,
-        booleanValue: true,
-        objectValue: {},
-      });
-    });
-
-    describe('When setting values of mismatched types', () => {
-      beforeEach(() => {
-        target.numberValue = '123';
-        target.stringValue = false;
-        target.booleanValue = false;
-        target.arrayValue = {};
-        target.objectValue = [];
-      });
-
-      it('should record set types without error', () => {
-        expect(reporter).not.toHaveBeenCalled();
-      });
-
-      describe('When setting values of mismatched types', () => {
-        beforeEach(() => {
-          target.numberValue = 123;
-          target.stringValue = 'true';
-          target.booleanValue = true;
-          target.arrayValue = [];
-          target.objectValue = {};
-        });
-
-        it('should record set types without error', () => {
-          expect(reporter).toHaveBeenCalledTimes(4);
-          expect(reporter).toHaveBeenCalledWith(SET_PROPERTY, 'numberValue', 'string', 'number');
-          expect(reporter).toHaveBeenCalledWith(SET_PROPERTY, 'stringValue', 'boolean', 'string');
-          expect(reporter).toHaveBeenCalledWith(SET_PROPERTY, 'arrayValue', 'object', 'array');
-          expect(reporter).toHaveBeenCalledWith(SET_PROPERTY, 'objectValue', 'array', 'object');
-        });
-      });
-    });
-  });
-
-  describe('When deep is true', () => {
-    beforeEach(() => {
-      target = create({
-        arrayValue: [1, 2, 3],
-        objectValue: { val1: 1, val2: '2', val3: true },
-        method: () => false,
-      });
-    });
-
-    it('should have child objects type checked', () => {
-      expect(isTypeChecked(target.arrayValue)).toBe(true);
-      expect(isTypeChecked(target.objectValue)).toBe(true);
-    });
-
-    it('should have methods type checked', () => {
-      expect(isTypeChecked(target.method)).toBe(true);
-    });
-
-    describe('When accessing descendants', () => {
-      beforeEach(() => {
-        expect(target.objectValue.val1).toBe(1);
-        expect(target.arrayValue[2]).toBe(3);
-        target.arrayValue[2] = '5';
-        target.objectValue.val1 = 'any string';
-      });
-
-      it('should report type violation', () => {
-        expect(reporter).toHaveBeenCalledTimes(2);
-        expect(reporter).toHaveBeenCalledWith(
-          SET_PROPERTY,
-          `arrayValue${INDEX}`,
-          'number',
-          'string',
-        );
-        expect(reporter).toHaveBeenCalledWith(
-          SET_PROPERTY,
-          'objectValue.val1',
-          'number',
-          'string',
-        );
-      });
-    });
-  });
-
-  describe('When deep is false', () => {
-    beforeEach(() => {
-      target = create({
-        arrayValue: [1, 2, 3],
-        objectValue: { val1: 1, val2: '2', val3: true },
-        method: () => false,
-      }, { deep: false });
-    });
-
-    it('should have child objects type checked', () => {
-      expect(isTypeChecked(target.arrayValue)).toBe(false);
-      expect(isTypeChecked(target.objectValue)).toBe(false);
-    });
-
-    it('should have methods type checked', () => {
-      expect(isTypeChecked(target.method)).toBe(true);
-    });
-
-    describe('When accessing descendants', () => {
-      beforeEach(() => {
-        target.arrayValue[2] = '5';
-        target.objectValue.val1 = 'any string';
-      });
-
-      it('should ignore type violation', () => {
-        expect(reporter).not.toHaveBeenCalled();
-      });
-    });
-  });
-
-  describe('When disabled', () => {
-    beforeEach(() => {
-      setEnabled(false);
-
-      target = create({
-        numberValue: 12,
-      });
-
-      afterEach(() => {
-        setEnabled(true);
-      });
-
-      target.numberValue = 'abc';
-      target.numberValue = false;
-      target.numberValue = () => null;
-    });
-
-    it('should not be type checked', () => {
-      expect(isTypeChecked(target)).toBe(false);
-    });
-
-    it('should not check types', () => {
-      expect(reporter).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('When accessing types information', () => {
-    beforeEach(() => {
-      PrimitiveTypeChecker.collectTypesOnInit = true;
-      target = create({
-        numberValue: 12,
-        stringValue: 'my string',
-      });
-    });
-
-    it('should contain collection with primitive types', () => {
-      expect(getTargetInfo(target)).toMatchSnapshot();
-      expect(getTargetTypeCheckerConfig(target).types).toEqual({
-        numberValue: 'number',
-        stringValue: 'string',
-      });
-    });
-
-    describe('When writing types information', () => {
-      beforeEach(() => {
-        const newTarget = create({
+    it('should be an object with all properties available', () => {
+      expect(target).toEqual(
+        expect.objectContaining({
+          numberValue: 12,
+          stringValue: 'my string',
           booleanValue: true,
-          arrayValue: [1, 2, 3],
-          objectValue: { val1: 1, val2: '2', val3: true },
+          arrayValue: expect.arrayContaining([1, 2, 3]),
+          objectValue: expect.objectContaining({
+            val1: 1,
+            val2: '2',
+            val3: true
+          }),
+          method: expect.any(Function)
+        })
+      );
+    });
+
+    it('should contain info object with meta data', () => {
+      expect(getTargetInfo(target)).toEqual(expect.any(Object));
+    });
+
+    it('should become type checked', () => {
+      expect(isTypeChecked(target)).toBe(true);
+    });
+
+    it('should store type checker reference', () => {
+      expect(getTargetTypeChecker(target)).toBe(checker);
+    });
+
+    it('should store type checker config', () => {
+      expect(getTargetTypeCheckerConfig(target)).toEqual({
+        type: 'type-checker-config'
+      });
+    });
+
+    describe('When reading property', () => {
+      describe('When reading primitive value', () => {
+        it('should return value as is', () => {
+          expect(target.numberValue).toBe(12);
+          expect(target.stringValue).toBe('my string');
+          expect(target.booleanValue).toBe(true);
+        });
+      });
+
+      describe('When reading object property', () => {
+        beforeEach(() => {
+          result = target.objectValue;
         });
 
-        // init children types
-        (() => null)(newTarget.arrayValue, newTarget.objectValue);
+        it('should be an object with all properties available', () => {
+          expect(result).toEqual(
+            expect.objectContaining({
+              val1: 1,
+              val2: '2',
+              val3: true
+            })
+          );
+        });
 
-        // merge types
-        setTargetInfo(target, getTargetInfo(newTarget));
+        it('should be type checked', () => {
+          expect(isTypeChecked(result)).toBe(true);
+        });
       });
 
-      it('should contain collection with primitive types', () => {
-        expect(getTargetInfo(target)).toMatchSnapshot();
-        expect(getTargetTypeCheckerConfig(target).types).toEqual({
-          numberValue: 'number',
-          stringValue: 'string',
-          booleanValue: 'boolean',
-          arrayValue: 'array',
-          objectValue: 'object',
+      describe('When reading function property', () => {
+        beforeEach(() => {
+          result = target.method;
+        });
+        it('should be a function', () => {
+          expect(result).toBeInstanceOf(Function);
+          expect(result(1)).toBe(true);
+        });
+      });
+
+      describe('When reading unexistent property', () => {
+        beforeEach(() => {
+          result = target.unknownValue;
+        });
+
+        it('should be undefined', () => {
+          expect(result).toBe(undefined);
+        });
+      });
+
+      describe('When reading built-ins', () => {
+        beforeEach(() => {
+          result = target.constructor;
+        });
+
+        it('should be a function', () => {
+          expect(result).toEqual(expect.any(Function));
+        });
+
+        it('should contain info object with meta data', () => {
+          expect(getTargetInfo(result)).toEqual(expect.any(Object));
+        });
+
+        it('should become type checked', () => {
+          expect(isTypeChecked(result)).toBe(true);
+        });
+
+        it('should store type checker reference', () => {
+          expect(getTargetTypeChecker(result)).toBe(checker);
+        });
+
+        it('should store type checker config', () => {
+          expect(getTargetTypeCheckerConfig(result)).toEqual({
+            type: 'type-checker-config'
+          });
         });
       });
     });
-  });
 
-  describe('When accessing original object', () => {
-    beforeEach(() => {
-      PrimitiveTypeChecker.collectTypesOnInit = true;
-      target = create({
-        numberValue: 12,
-        stringValue: 'my string',
-      });
-    });
+    describe('When writing property', () => {
+      describe('When type matches', () => {
+        beforeEach(() => {
+          target.stringValue = '123';
+          target.objectValue = { type: 'my-object' };
+        });
 
-    it('should be possible to access target object', () => {
-      expect(getOriginalTarget(target)).toEqual({
-        numberValue: 12,
-        stringValue: 'my string',
-        [INFO_KEY]: expect.any(Object),
-      });
-    });
-
-    describe('When original object updated directly', () => {
-      beforeEach(() => {
-        getOriginalTarget(target).numberValue = '44';
-        (() => null)(target.numberValue);
+        it('should apply new values', () => {
+          expect(target).toEqual(
+            expect.objectContaining({
+              numberValue: 12,
+              stringValue: '123',
+              booleanValue: true,
+              objectValue: expect.objectContaining({ type: 'my-object' })
+            })
+          );
+        });
       });
 
-      it('should report type error when accessing updated property', () => {
-        expect(reporter).toHaveBeenCalledTimes(1);
-        expect(reporter).toHaveBeenCalledWith(GET_PROPERTY, 'numberValue', 'number', 'string');
-      });
-    });
+      describe('When type does not match', () => {
+        beforeEach(() => {
+          target.stringValue = 123;
+          target.arrayValue = { type: 'my-object' };
+        });
 
-    describe('When reset original object', () => {
-      it('should throw error', () => {
-        expect(() => {
-          target[TARGET_KEY] = { numberValue: 15 };
-        }).toThrow();
+        it('should apply new values', () => {
+          expect(target).toEqual(
+            expect.objectContaining({
+              numberValue: 12,
+              stringValue: 123,
+              booleanValue: true,
+              arrayValue: expect.objectContaining({ type: 'my-object' })
+            })
+          );
+        });
       });
-
     });
   });
 });

@@ -1,11 +1,7 @@
-import SomeString from '../index';
+import createTypeChecked from '../index';
 
 describe('index', () => {
   it('should export string as default', () => {
-    expect(typeof SomeString).toEqual('string');
-  });
-
-  it('should export non-empty string', () => {
-    expect(SomeString).toBeTruthy();
+    expect(typeof createTypeChecked).toEqual('function');
   });
 });

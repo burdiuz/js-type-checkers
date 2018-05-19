@@ -90,12 +90,27 @@ const getTargetTypeCheckerConfig = target => {
   return target[INFO_KEY].config;
 };
 
+/*
+  I have had to apply custom key instead of name as is to
+  fix "construtor" issue. Since ordinary object has some
+  properties with values from start, these properties were
+  mustakenly returned as child info objects, for example, if
+  requesting hild info for "constructor" function of the target,
+  it returned class constructor which caused errors later,
+  when accesing info properties.
+ */
+const getChildInfoKey = name => `@${name}`;
+
 const mergeChildrenCache = (targetCache, sourceCache) => {
+  // eslint-disable-next-line guard-for-in
   for (const name in sourceCache) {
-    if (hasOwn(targetCache, name)) {
-      targetCache[name] = mergeTargetInfo(targetCache[name], sourceCache[name]);
+    const key = getChildInfoKey(name);
+
+    if (hasOwn(targetCache, key)) {
+      // eslint-disable-next-line no-use-before-define
+      targetCache[key] = mergeTargetInfo(targetCache[key], sourceCache[key]);
     } else {
-      targetCache[name] = sourceCache[name];
+      targetCache[key] = sourceCache[key];
     }
   }
 
@@ -103,10 +118,11 @@ const mergeChildrenCache = (targetCache, sourceCache) => {
 };
 
 const storeChildInfo = (cache, name, childInfo) => {
-  delete cache[name];
+  const key = getChildInfoKey(name);
+  delete cache[key];
 
   if (childInfo) {
-    cache[name] = childInfo;
+    cache[key] = childInfo;
   }
 };
 
@@ -114,7 +130,7 @@ const storeChildInfoFrom = (cache, name, child) => {
   storeChildInfo(cache, name, getTargetInfo(child));
 };
 
-const getChildInfo = (cache, name) => cache[name];
+const getChildInfo = (cache, name) => cache[getChildInfoKey(name)];
 
 const mergeTargetInfo = (targetInfo, sourceInfo) => {
   const { deep, checker, children, config, names } = targetInfo;
