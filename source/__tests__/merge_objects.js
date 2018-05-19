@@ -13,19 +13,19 @@ describe('When merging objects', () => {
       getProperty: jest.fn(),
       setProperty: jest.fn(),
       arguments: jest.fn(),
-      returnValue: jest.fn()
+      returnValue: jest.fn(),
     };
 
     setDefaultTypeChecker(checker);
 
     target1 = create({
       val11: 1,
-      val12: '2'
+      val12: '2',
     });
 
     target2 = create({
       val21: true,
-      val22: {}
+      val22: {},
     });
   });
 

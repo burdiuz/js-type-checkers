@@ -6,9 +6,7 @@ export const ThrowErrorReporter = (
   action,
   name,
   requiredTypeString,
-  actualTypeString
+  actualTypeString,
 ) => {
-  throw new Error(
-    constructErrorString(action, name, requiredTypeString, actualTypeString)
-  );
+  throw new Error(constructErrorString(action, name, requiredTypeString, actualTypeString));
 };

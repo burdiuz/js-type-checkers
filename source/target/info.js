@@ -9,17 +9,17 @@ export const createTargetInfo = (
   config,
   deep = true,
   names = [],
-  children = createChildrenCache()
+  children = createChildrenCache(),
 ) => ({
   checker,
   config,
   deep,
   names,
-  children
+  children,
 });
 
 export const getTargetInfo = (target) =>
-  target ? target[INFO_KEY] : undefined;
+  (target ? target[INFO_KEY] : undefined);
 
 export const setTargetInfo = (target, info) => {
   if (target && info) {
@@ -30,7 +30,7 @@ export const setTargetInfo = (target, info) => {
 export const hasTargetInfo = (target) => !!getTargetInfo(target);
 
 export const getTargetTypeChecker = (target) =>
-  target && target[INFO_KEY] ? target[INFO_KEY].checker : undefined;
+  (target && target[INFO_KEY] ? target[INFO_KEY].checker : undefined);
 
 export const getTargetTypeCheckerConfig = (target) => {
   if (!target || !target[INFO_KEY]) {
@@ -95,9 +95,7 @@ export const mergeTargetInfo = (targetInfo, sourceInfo) => {
     targetInfo.children = mergeChildrenCache(children, sourceInfo.children);
     targetInfo.config = checker.mergeConfigs(config, sourceInfo.config, names);
   } else {
-    console.error(
-      'TypeChecked objects can be merged only if using exactly same instance of type checker.'
-    );
+    console.error('TypeChecked objects can be merged only if using exactly same instance of type checker.');
   }
 
   return targetInfo;

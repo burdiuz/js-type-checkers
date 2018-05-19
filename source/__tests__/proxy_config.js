@@ -6,7 +6,7 @@ import {
   PROXY_WRAP_FUNCTION_RETURN_VALUES,
   PROXY_WRAP_SET_PROPERTY_VALUES,
   PROXY_IGNORE_PROTOTYPE_METHODS,
-  getDefaultProxyConfig
+  getDefaultProxyConfig,
 } from '../proxy';
 import { setDefaultTypeChecker } from '../checkers';
 import { isTypeChecked } from '../utils';
@@ -22,7 +22,7 @@ describe('Proxy configs', () => {
       getProperty: jest.fn(),
       setProperty: jest.fn(),
       arguments: jest.fn(),
-      returnValue: jest.fn()
+      returnValue: jest.fn(),
     };
 
     setDefaultTypeChecker(checker);
@@ -45,7 +45,7 @@ describe('Proxy configs', () => {
         [PROXY_WRAP_FUNCTION_RETURN_VALUES]: false,
         [PROXY_WRAP_FUNCTION_ARGUMENTS]: true,
         [PROXY_WRAP_SET_PROPERTY_VALUES]: false,
-        [PROXY_IGNORE_PROTOTYPE_METHODS]: false
+        [PROXY_IGNORE_PROTOTYPE_METHODS]: false,
       });
     });
   });
@@ -59,7 +59,7 @@ describe('Proxy configs', () => {
       describe('When returning primitive value', () => {
         beforeEach(() => {
           target = create({
-            method: () => 'my string'
+            method: () => 'my string',
           });
         });
 
@@ -75,8 +75,8 @@ describe('Proxy configs', () => {
           target = create({
             method: () => ({
               numberValue: 123,
-              stringValue: 'my string'
-            })
+              stringValue: 'my string',
+            }),
           });
 
           result = target.method();
@@ -87,12 +87,10 @@ describe('Proxy configs', () => {
         });
 
         it('should retun type wrapped object', () => {
-          expect(result).toEqual(
-            expect.objectContaining({
-              numberValue: 123,
-              stringValue: 'my string'
-            })
-          );
+          expect(result).toEqual(expect.objectContaining({
+            numberValue: 123,
+            stringValue: 'my string',
+          }));
         });
       });
     });
@@ -105,7 +103,7 @@ describe('Proxy configs', () => {
       describe('When returning primitive value', () => {
         beforeEach(() => {
           target = create({
-            method: () => 'my string'
+            method: () => 'my string',
           });
         });
 
@@ -121,8 +119,8 @@ describe('Proxy configs', () => {
           target = create({
             method: () => ({
               numberValue: 123,
-              stringValue: 'my string'
-            })
+              stringValue: 'my string',
+            }),
           });
 
           result = target.method();
@@ -135,7 +133,7 @@ describe('Proxy configs', () => {
         it('should retun type wrapped object', () => {
           expect(result).toEqual({
             numberValue: 123,
-            stringValue: 'my string'
+            stringValue: 'my string',
           });
         });
       });
@@ -150,7 +148,7 @@ describe('Proxy configs', () => {
         setProxyConfig({ [PROXY_WRAP_FUNCTION_ARGUMENTS]: true });
         method = jest.fn();
         target = create({
-          method: (...args) => method(...args)
+          method: (...args) => method(...args),
         });
 
         target.method(true, 12, { value: 'my string' });
@@ -169,7 +167,7 @@ describe('Proxy configs', () => {
         setProxyConfig({ [PROXY_WRAP_FUNCTION_ARGUMENTS]: false });
         method = jest.fn();
         target = create({
-          method: (...args) => method(...args)
+          method: (...args) => method(...args),
         });
 
         target.method(true, 12, { value: 'my string' }, []);
@@ -195,7 +193,7 @@ describe('Proxy configs', () => {
         },
         set value(newValue) {
           value = newValue;
-        }
+        },
       });
     });
 
@@ -254,19 +252,19 @@ describe('Proxy configs', () => {
         [PROXY_WRAP_FUNCTION_RETURN_VALUES]: false,
         [PROXY_WRAP_FUNCTION_ARGUMENTS]: false,
         [PROXY_WRAP_SET_PROPERTY_VALUES]: false,
-        [PROXY_IGNORE_PROTOTYPE_METHODS]: true
+        [PROXY_IGNORE_PROTOTYPE_METHODS]: true,
       });
 
       target = create(
         {
-          method: () => null
+          method: () => null,
         },
         {
           [PROXY_WRAP_FUNCTION_RETURN_VALUES]: true,
           [PROXY_WRAP_FUNCTION_ARGUMENTS]: true,
           [PROXY_WRAP_SET_PROPERTY_VALUES]: true,
-          [PROXY_IGNORE_PROTOTYPE_METHODS]: false
-        }
+          [PROXY_IGNORE_PROTOTYPE_METHODS]: false,
+        },
       );
     });
 

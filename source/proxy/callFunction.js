@@ -3,7 +3,7 @@ import { getTargetInfo } from '../target/info';
 import {
   getProxyConfigValue,
   PROXY_WRAP_FUNCTION_ARGUMENTS,
-  PROXY_WRAP_FUNCTION_RETURN_VALUES
+  PROXY_WRAP_FUNCTION_RETURN_VALUES,
 } from './config';
 
 import { getTypeCheckedChild } from './utils';
@@ -19,7 +19,7 @@ const getTargetArguments = (createFn, target, argumentsList) => {
         createFn,
         info,
         String(index),
-        argumentsList[index]
+        argumentsList[index],
       );
     }
   }

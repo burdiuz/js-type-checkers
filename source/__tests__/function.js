@@ -2,7 +2,7 @@ import { setDefaultTypeChecker } from '../checkers';
 import {
   getTargetInfo,
   getTargetTypeChecker,
-  getTargetTypeCheckerConfig
+  getTargetTypeCheckerConfig,
 } from '../target/info';
 import create from '../proxy/create';
 import { isTypeChecked } from '../utils';
@@ -17,7 +17,7 @@ describe('Array', () => {
       getProperty: jest.fn(),
       setProperty: jest.fn(),
       arguments: jest.fn(),
-      returnValue: jest.fn()
+      returnValue: jest.fn(),
     };
 
     setDefaultTypeChecker(checker);
@@ -51,7 +51,7 @@ describe('Array', () => {
 
     it('should store type checker config', () => {
       expect(getTargetTypeCheckerConfig(target)).toEqual({
-        type: 'type-checker-config'
+        type: 'type-checker-config',
       });
     });
   });

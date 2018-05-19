@@ -2,7 +2,7 @@ import { setDefaultTypeChecker } from '../checkers';
 import {
   getTargetInfo,
   getTargetTypeChecker,
-  getTargetTypeCheckerConfig
+  getTargetTypeCheckerConfig,
 } from '../target/info';
 import create from '../proxy/create';
 import { isTypeChecked } from '../utils';
@@ -18,7 +18,7 @@ describe('Object', () => {
       getProperty: jest.fn(),
       setProperty: jest.fn(),
       arguments: jest.fn(),
-      returnValue: jest.fn()
+      returnValue: jest.fn(),
     };
 
     setDefaultTypeChecker(checker);
@@ -32,25 +32,23 @@ describe('Object', () => {
         booleanValue: true,
         arrayValue: [1, 2, 3],
         objectValue: { val1: 1, val2: '2', val3: true },
-        method: (a) => !!a
+        method: (a) => !!a,
       });
     });
 
     it('should be an object with all properties available', () => {
-      expect(target).toEqual(
-        expect.objectContaining({
-          numberValue: 12,
-          stringValue: 'my string',
-          booleanValue: true,
-          arrayValue: expect.arrayContaining([1, 2, 3]),
-          objectValue: expect.objectContaining({
-            val1: 1,
-            val2: '2',
-            val3: true
-          }),
-          method: expect.any(Function)
-        })
-      );
+      expect(target).toEqual(expect.objectContaining({
+        numberValue: 12,
+        stringValue: 'my string',
+        booleanValue: true,
+        arrayValue: expect.arrayContaining([1, 2, 3]),
+        objectValue: expect.objectContaining({
+          val1: 1,
+          val2: '2',
+          val3: true,
+        }),
+        method: expect.any(Function),
+      }));
     });
 
     it('should contain info object with meta data', () => {
@@ -67,7 +65,7 @@ describe('Object', () => {
 
     it('should store type checker config', () => {
       expect(getTargetTypeCheckerConfig(target)).toEqual({
-        type: 'type-checker-config'
+        type: 'type-checker-config',
       });
     });
 
@@ -86,13 +84,11 @@ describe('Object', () => {
         });
 
         it('should be an object with all properties available', () => {
-          expect(result).toEqual(
-            expect.objectContaining({
-              val1: 1,
-              val2: '2',
-              val3: true
-            })
-          );
+          expect(result).toEqual(expect.objectContaining({
+            val1: 1,
+            val2: '2',
+            val3: true,
+          }));
         });
 
         it('should be type checked', () => {
@@ -143,7 +139,7 @@ describe('Object', () => {
 
         it('should store type checker config', () => {
           expect(getTargetTypeCheckerConfig(result)).toEqual({
-            type: 'type-checker-config'
+            type: 'type-checker-config',
           });
         });
       });
@@ -157,14 +153,12 @@ describe('Object', () => {
         });
 
         it('should apply new values', () => {
-          expect(target).toEqual(
-            expect.objectContaining({
-              numberValue: 12,
-              stringValue: '123',
-              booleanValue: true,
-              objectValue: expect.objectContaining({ type: 'my-object' })
-            })
-          );
+          expect(target).toEqual(expect.objectContaining({
+            numberValue: 12,
+            stringValue: '123',
+            booleanValue: true,
+            objectValue: expect.objectContaining({ type: 'my-object' }),
+          }));
         });
       });
 
@@ -175,14 +169,12 @@ describe('Object', () => {
         });
 
         it('should apply new values', () => {
-          expect(target).toEqual(
-            expect.objectContaining({
-              numberValue: 12,
-              stringValue: 123,
-              booleanValue: true,
-              arrayValue: expect.objectContaining({ type: 'my-object' })
-            })
-          );
+          expect(target).toEqual(expect.objectContaining({
+            numberValue: 12,
+            stringValue: 123,
+            booleanValue: true,
+            arrayValue: expect.objectContaining({ type: 'my-object' }),
+          }));
         });
       });
     });
