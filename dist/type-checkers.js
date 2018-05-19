@@ -33,11 +33,15 @@ const getProxyConfig = () => Object.assign({}, config);
 
 const getProxyConfigValue = (key, info = null) => hasOwn(info, key) ? info[key] : config[key];
 
+/* eslint-disable import/prefer-default-export */
+
 const constructErrorString = (action, name, required, actual) => `${action}Error on "${name}" instead of "${required}" received "${actual}"`;
 
 const ConsoleErrorReporter = (action, name, requiredTypeString, actualTypeString) => console.error(constructErrorString(action, name, requiredTypeString, actualTypeString));
 
 const ConsoleWarnReporter = (action, name, requiredTypeString, actualTypeString) => console.warn(constructErrorString(action, name, requiredTypeString, actualTypeString));
+
+/* eslint-disable import/prefer-default-export */
 
 const ThrowErrorReporter = (action, name, requiredTypeString, actualTypeString) => {
   throw new Error(constructErrorString(action, name, requiredTypeString, actualTypeString));
@@ -148,9 +152,7 @@ const mergeTargetInfo = (targetInfo, sourceInfo) => {
 
 const TARGET_KEY = Symbol('type-checkers::target');
 
-const getOriginalTarget = target => {
-  return target[TARGET_KEY] || target;
-};
+const getOriginalTarget = target => target[TARGET_KEY] || target;
 
 const validTypes = {
   object: true,
@@ -271,6 +273,8 @@ const setProperty = createFn => (target, property, value) => {
 
   return setNonTargetProperty(target, property, value) || setTargetProperty(createFn, target, property, value);
 };
+
+/* eslint-disable import/prefer-default-export */
 
 const getTypeCheckedChild = (createFn, info, name, value) => {
   if (!isValidTarget(value)) {

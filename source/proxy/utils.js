@@ -1,3 +1,5 @@
+/* eslint-disable import/prefer-default-export */
+
 import { isTypeChecked, isValidTarget } from '../utils';
 import { getChildInfo, storeChildInfoFrom } from '../target/info';
 
