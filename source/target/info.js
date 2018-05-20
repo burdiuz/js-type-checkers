@@ -29,15 +29,25 @@ export const setTargetInfo = (target, info) => {
 
 export const hasTargetInfo = (target) => !!getTargetInfo(target);
 
-export const getTargetTypeChecker = (target) =>
-  (target && target[INFO_KEY] ? target[INFO_KEY].checker : undefined);
+// TODO three times getting same, might need optimizing
+export const getTargetTypeChecker = (target) => {
+  if (target) {
+    const info = target[INFO_KEY];
 
-export const getTargetTypeCheckerConfig = (target) => {
-  if (!target || !target[INFO_KEY]) {
-    return undefined;
+    return (info && info.checker) || undefined;
   }
 
-  return target[INFO_KEY].config;
+  return undefined;
+};
+
+export const getTargetTypeCheckerConfig = (target) => {
+  if (target) {
+    const info = target[INFO_KEY];
+
+    return (info && info.config) || undefined;
+  }
+
+  return undefined;
 };
 
 /*
@@ -52,10 +62,7 @@ export const getTargetTypeCheckerConfig = (target) => {
 const getChildInfoKey = (name) => `@${name}`;
 
 export const mergeChildrenCache = (targetCache, sourceCache) => {
-  // eslint-disable-next-line guard-for-in
-  for (const name in sourceCache) {
-    const key = getChildInfoKey(name);
-
+  for (const key in sourceCache) {
     if (hasOwn(targetCache, key)) {
       // eslint-disable-next-line no-use-before-define
       targetCache[key] = mergeTargetInfo(targetCache[key], sourceCache[key]);

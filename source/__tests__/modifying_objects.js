@@ -2,20 +2,28 @@ import create from '../proxy/create';
 import { isTypeChecked } from '../utils';
 import { setDefaultTypeChecker } from '../checkers';
 
-describe('When merging objects', () => {
+const mockChecker = () => ({
+  init: jest.fn(() => ({ type: 'type-checker-config' })),
+  getProperty: jest.fn(),
+  setProperty: jest.fn(),
+  arguments: jest.fn(),
+  returnValue: jest.fn(),
+  mergeConfigs: jest.fn((config1, config2, names) => ({
+    config1,
+    config2,
+    names,
+  })),
+});
+
+describe('Object.assign()', () => {});
+
+describe('merge()', () => {
   let checker;
   let target1;
   let target2;
 
   beforeEach(() => {
-    checker = {
-      init: jest.fn(() => ({ type: 'type-checker-config' })),
-      getProperty: jest.fn(),
-      setProperty: jest.fn(),
-      arguments: jest.fn(),
-      returnValue: jest.fn(),
-    };
-
+    checker = mockChecker();
     setDefaultTypeChecker(checker);
 
     target1 = create({
@@ -33,8 +41,6 @@ describe('When merging objects', () => {
     expect(isTypeChecked(target1)).toBe(true);
     expect(isTypeChecked(target2)).toBe(true);
   });
-
-  describe('Object.assign()', () => {});
-
-  describe('merge()', () => {});
 });
+
+describe('properties()', () => {});

@@ -52,8 +52,10 @@ Library that reports assignments of values or function arguments, return values 
 6.  +Implement "createDeep()"
 7.  Cache child info for arguments
 8.  +Add ability to setup custom value validators for default type checker
-9.  Ignore accessing functions from prototype all the time
+9.  +Ignore accessing functions from prototype all the time
 10. Add option to ignore any kind of properties available via prototype
-11. Implement replaceProperty()
+11. +Implement replaceProperty() -> property()
 12. +Add possibility to make proxy config be part of target's info
-13. Move primitive type checker into separate repo
+13. +Move primitive type checker into separate repo
+14. Add possibility to register ignored names which will be just skipped whatewer is placed in, probably could be added to ExtendedTypeChecker.
+15. Add methods to convert info objects into primitives and back so they could be stored, would be good to have a system that permanently stores types info for consecutive runs.

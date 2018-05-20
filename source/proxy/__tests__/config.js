@@ -1,15 +1,18 @@
 import {
   getProxyConfig,
   setProxyConfig,
-  create,
   PROXY_WRAP_FUNCTION_ARGUMENTS,
   PROXY_WRAP_FUNCTION_RETURN_VALUES,
   PROXY_WRAP_SET_PROPERTY_VALUES,
   PROXY_IGNORE_PROTOTYPE_METHODS,
   getDefaultProxyConfig,
-} from '../proxy';
-import { setDefaultTypeChecker } from '../checkers';
-import { isTypeChecked } from '../utils';
+} from '../config';
+
+import create from '../create';
+
+import { setDefaultTypeChecker } from '../../checkers';
+
+import { isTypeChecked } from '../../utils';
 
 // all tests about configuring proxy
 describe('Proxy configs', () => {

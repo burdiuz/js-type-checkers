@@ -1,34 +1,32 @@
 import { isEnabled } from '../enabled';
-import {
-  setTargetInfo,
-  storeChildInfo,
-  getChildInfo,
-} from '../target/info';
-import { isTypeChecked } from '../utils';
+import { setTargetInfo, storeChildInfo, getChildInfo } from '../target/info';
+import { isTypeChecked, isValidTarget } from '../utils';
 import { wrapWithProxy, createInfoFromOptions } from './create';
 
 const deepInitializer = (target, options) => {
   const info = createInfoFromOptions(target, options);
   const { deep, names, checker, config, children } = info;
 
-  Object.keys(target)
-    .forEach((name) => {
-      const value = target[name];
+  Object.keys(target).forEach((name) => {
+    const value = target[name];
 
-      checker.getProperty(target, name, value, config, names);
+    checker.getProperty(target, name, value, config, names);
 
-      // skip functions/methods since we get info about them only when being executed
-      if (typeof value === 'object') {
-        let childInfo = getChildInfo(children, name);
+    if (isValidTarget(value)) {
+      let childInfo = getChildInfo(children, name);
 
-        if (childInfo) {
-          deepInitializer(value, { info: childInfo });
-        } else {
-          childInfo = deepInitializer(value, { deep, names: [...names, name], checker });
-          storeChildInfo(children, name, childInfo);
-        }
+      if (childInfo) {
+        deepInitializer(value, { info: childInfo });
+      } else {
+        childInfo = deepInitializer(value, {
+          deep,
+          names: [...names, name],
+          checker,
+        });
+        storeChildInfo(children, name, childInfo);
       }
-    });
+    }
+  });
 
   setTargetInfo(target, info);
 
@@ -36,7 +34,12 @@ const deepInitializer = (target, options) => {
 };
 
 const createDeep = (target, options) => {
-  if (!target || typeof target !== 'object' || !isEnabled() || isTypeChecked(target)) {
+  if (
+    !target ||
+    typeof target !== 'object' ||
+    !isEnabled() ||
+    isTypeChecked(target)
+  ) {
     return target;
   }
 

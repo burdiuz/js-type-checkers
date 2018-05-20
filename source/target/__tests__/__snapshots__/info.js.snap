@@ -1,0 +1,112 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`When merging info When different type checkers used should match not merged info1 1`] = `
+Object {
+  "checker": Object {
+    "mergeConfigs": [Function],
+    "type": "checker",
+  },
+  "children": Object {
+    "prop1": Object {
+      "checker": Object {
+        "mergeConfigs": [Function],
+        "type": "checker",
+      },
+      "children": Object {},
+      "config": Object {
+        "type": "checker1-child1",
+      },
+      "deep": true,
+      "names": Array [
+        "name1",
+        "child1",
+      ],
+    },
+    "prop2": Object {
+      "checker": Object {
+        "mergeConfigs": [Function],
+        "type": "checker",
+      },
+      "children": Object {},
+      "config": Object {
+        "type": "checker1-child2",
+      },
+      "deep": true,
+      "names": Array [
+        "name1",
+        "child2",
+      ],
+    },
+  },
+  "config": Object {
+    "type": "checker1-config1",
+  },
+  "deep": true,
+  "names": Array [
+    "name1",
+  ],
+}
+`;
+
+exports[`When merging info When same type checker used should match merged info objects 1`] = `
+Object {
+  "checker": Object {
+    "mergeConfigs": [Function],
+    "type": "checker",
+  },
+  "children": Object {
+    "prop1": Object {
+      "checker": Object {
+        "mergeConfigs": [Function],
+        "type": "checker",
+      },
+      "children": Object {},
+      "config": Object {
+        "type": "checker1-child1",
+      },
+      "deep": true,
+      "names": Array [
+        "name1",
+        "child1",
+      ],
+    },
+    "prop2": Object {
+      "checker": Object {
+        "mergeConfigs": [Function],
+        "type": "checker",
+      },
+      "children": Object {},
+      "config": Object {
+        "type": "merged-config",
+      },
+      "deep": true,
+      "names": Array [
+        "name1",
+        "child2",
+      ],
+    },
+    "prop3": Object {
+      "checker": Object {
+        "mergeConfigs": [Function],
+        "type": "checker",
+      },
+      "children": Object {},
+      "config": Object {
+        "type": "checker2-child3",
+      },
+      "deep": true,
+      "names": Array [
+        "name2",
+        "child3",
+      ],
+    },
+  },
+  "config": Object {
+    "type": "merged-config",
+  },
+  "deep": true,
+  "names": Array [
+    "name1",
+  ],
+}
+`;
