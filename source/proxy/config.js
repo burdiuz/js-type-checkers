@@ -1,4 +1,4 @@
-import hasOwn from '@actualwave/hasOwn';
+import hasOwn from '@actualwave/has-own';
 
 export const PROXY_WRAP_FUNCTION_RETURN_VALUES = 'wrapFunctionReturnValues';
 export const PROXY_WRAP_FUNCTION_ARGUMENTS = 'wrapFunctionArguments';

@@ -1,4 +1,4 @@
-import hasOwn from '@actualwave/hasOwn';
+import hasOwn from '@actualwave/has-own';
 
 import {
   INFO_KEY,
@@ -7,15 +7,9 @@ import {
   storeChildInfoFrom,
 } from '../target/info';
 
-import {
-  getProxyConfigValue,
-  PROXY_IGNORE_PROTOTYPE_METHODS,
-} from './config';
+import { getProxyConfigValue, PROXY_IGNORE_PROTOTYPE_METHODS } from './config';
 
-import {
-  isValidTarget,
-  isTypeChecked,
-} from '../utils';
+import { isValidTarget, isTypeChecked } from '../utils';
 
 import { TARGET_KEY } from '../target/proxy';
 
@@ -39,9 +33,9 @@ const getTargetProperty = (createFn, target, property, value) => {
 
 const isIgnoredProperty = (target, info, property, value) => {
   if (
-    value instanceof Function
-    && !hasOwn(target, property)
-    && getProxyConfigValue(PROXY_IGNORE_PROTOTYPE_METHODS, info)
+    value instanceof Function &&
+    !hasOwn(target, property) &&
+    getProxyConfigValue(PROXY_IGNORE_PROTOTYPE_METHODS, info)
   ) {
     return true;
   }
@@ -70,9 +64,9 @@ const getProperty = (createFn) => (target, property) => {
   }
 
   if (
-    !isValidTarget(value)
-    || isTypeChecked(value)
-    || isIgnoredProperty(target, info, property, value)
+    !isValidTarget(value) ||
+    isTypeChecked(value) ||
+    isIgnoredProperty(target, info, property, value)
   ) {
     return value;
   }

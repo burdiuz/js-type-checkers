@@ -40,7 +40,7 @@ export const baseConfig = {
   ],
   plugins,
   external: [
-    '@actualwave/hasOwn',
+    '@actualwave/has-own',
   ],
 };
 

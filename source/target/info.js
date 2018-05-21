@@ -1,4 +1,4 @@
-import hasOwn from '@actualwave/hasOwn';
+import hasOwn from '@actualwave/has-own';
 
 export const INFO_KEY = Symbol('type-checkers::info');
 

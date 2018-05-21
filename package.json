@@ -19,7 +19,7 @@
     "url": "https://github.com/burdiuz/js-lib-environment.git"
   },
   "dependencies": {
-    "@actualwave/hasOwn": "gist:d81cd59d2d619d921531165fac0e8c77"
+    "@actualwave/has-own": "^0.0.1`"
   },
   "devDependencies": {
     "babel-core": "^6.26.3",

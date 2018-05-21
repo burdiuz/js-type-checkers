@@ -408,7 +408,11 @@ const deepInitializer = (target, options) => {
       if (childInfo) {
         deepInitializer(value, { info: childInfo });
       } else {
-        childInfo = deepInitializer(value, { deep, names: [...names, name], checker });
+        childInfo = deepInitializer(value, {
+          deep,
+          names: [...names, name],
+          checker
+        });
         storeChildInfo(children, name, childInfo);
       }
     }
