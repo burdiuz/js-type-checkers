@@ -4,7 +4,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var hasOwn = _interopDefault(require('@actualwave/hasOwn'));
+var hasOwn = _interopDefault(require('@actualwave/has-own'));
 
 let defaultTypeChecker = null;
 
