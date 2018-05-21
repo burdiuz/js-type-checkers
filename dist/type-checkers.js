@@ -35,7 +35,9 @@ const getProxyConfigValue = (key, info = null) => hasOwn(info, key) ? info[key] 
 
 /* eslint-disable import/prefer-default-export */
 
-const constructErrorString = (action, name, required, actual) => `${action}Error on "${name}" instead of "${required}" received "${actual}"`;
+const constructErrorString = (action, name, required, received) => `${action}Error on "${name}" instead of "${required}" received "${received}"`;
+
+/* eslint-disable no-console */
 
 const ConsoleErrorReporter = (action, name, requiredTypeString, actualTypeString) => console.error(constructErrorString(action, name, requiredTypeString, actualTypeString));
 
@@ -43,8 +45,8 @@ const ConsoleWarnReporter = (action, name, requiredTypeString, actualTypeString)
 
 /* eslint-disable import/prefer-default-export */
 
-const ThrowErrorReporter = (action, name, requiredTypeString, actualTypeString) => {
-  throw new Error(constructErrorString(action, name, requiredTypeString, actualTypeString));
+const ThrowErrorReporter = (action, name, requiredTypeString, receivedTypeString) => {
+  throw new Error(constructErrorString(action, name, requiredTypeString, receivedTypeString));
 };
 
 let errorReporter = ConsoleErrorReporter;
@@ -84,14 +86,25 @@ const setTargetInfo = (target, info) => {
 
 const hasTargetInfo = target => !!getTargetInfo(target);
 
-const getTargetTypeChecker = target => target && target[INFO_KEY] ? target[INFO_KEY].checker : undefined;
+// TODO three times getting same, might need optimizing
+const getTargetTypeChecker = target => {
+  if (target) {
+    const info = target[INFO_KEY];
 
-const getTargetTypeCheckerConfig = target => {
-  if (!target || !target[INFO_KEY]) {
-    return undefined;
+    return info && info.checker || undefined;
   }
 
-  return target[INFO_KEY].config;
+  return undefined;
+};
+
+const getTargetTypeCheckerConfig = target => {
+  if (target) {
+    const info = target[INFO_KEY];
+
+    return info && info.config || undefined;
+  }
+
+  return undefined;
 };
 
 /*
@@ -106,10 +119,7 @@ const getTargetTypeCheckerConfig = target => {
 const getChildInfoKey = name => `@${name}`;
 
 const mergeChildrenCache = (targetCache, sourceCache) => {
-  // eslint-disable-next-line guard-for-in
-  for (const name in sourceCache) {
-    const key = getChildInfoKey(name);
-
+  for (const key in sourceCache) {
     if (hasOwn(targetCache, key)) {
       // eslint-disable-next-line no-use-before-define
       targetCache[key] = mergeTargetInfo(targetCache[key], sourceCache[key]);
@@ -152,7 +162,7 @@ const mergeTargetInfo = (targetInfo, sourceInfo) => {
 
 const TARGET_KEY = Symbol('type-checkers::target');
 
-const getOriginalTarget = target => target[TARGET_KEY] || target;
+const getOriginalTarget = target => target && target[TARGET_KEY] || target;
 
 const validTypes = {
   object: true,
@@ -392,8 +402,7 @@ const deepInitializer = (target, options) => {
 
     checker.getProperty(target, name, value, config, names);
 
-    // skip functions/methods since we get info about them only when being executed
-    if (typeof value === 'object') {
+    if (isValidTarget(value)) {
       let childInfo = getChildInfo(children, name);
 
       if (childInfo) {
@@ -420,7 +429,7 @@ const createDeep = (target, options) => {
   return wrapWithProxy(target);
 };
 
-const objectMerge = (options, ...sources) => {
+const merge = (options, ...sources) => {
   let target = {};
 
   if (isEnabled()) {
@@ -499,7 +508,7 @@ exports.getTargetTypeChecker = getTargetTypeChecker;
 exports.getTargetTypeCheckerConfig = getTargetTypeCheckerConfig;
 exports.mergeTargetInfo = mergeTargetInfo;
 exports.getOriginalTarget = getOriginalTarget;
-exports.merge = objectMerge;
+exports.merge = merge;
 exports.properties = properties;
 exports.isTypeChecked = isTypeChecked;
 exports.isValidTarget = isValidTarget;

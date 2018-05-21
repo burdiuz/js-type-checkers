@@ -1,5 +1,11 @@
 # JS-Type-Checkers
 
+[![Coverage Status](https://coveralls.io/repos/github/burdiuz/js-type-checkers/badge.svg?branch=master)](https://coveralls.io/github/burdiuz/js-type-checkers?branch=master)
+[![Build Status](https://travis-ci.org/burdiuz/js-type-checkers.svg?branch=master)](https://travis-ci.org/burdiuz/js-type-checkers)
+
+
+
+
 Library that reports assignments of values or function arguments, return values with wrong types.
 ```
     const myObj = {
