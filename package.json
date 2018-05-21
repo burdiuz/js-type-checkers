@@ -1,22 +1,22 @@
 {
   "name": "@actualwave/type-checkers",
   "description": "Framework for parameter/value analysis on access or mutation, used for type check in runtime.",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "main": "dist/type-checkers.js",
   "keywords": [
     "js",
     "javascript"
   ],
-  "homepage": "https://github.com/burdiuz/js-lib-environment",
+  "homepage": "https://github.com/burdiuz/js-type-checkers",
   "bugs": {
-    "url": "https://github.com/burdiuz/js-lib-environment/issues",
+    "url": "https://github.com/burdiuz/js-type-checkers/issues",
     "email": "burdiuz@gmail.com"
   },
   "license": "MIT",
   "author": "Oleg Galaburda <burdiuz@gmail.com> (http://actualwave.com/)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/burdiuz/js-lib-environment.git"
+    "url": "https://github.com/burdiuz/js-type-checkers.git"
   },
   "dependencies": {
     "@actualwave/has-own": "^0.0.1"
