@@ -1,4 +1,5 @@
 import hasOwn from '@actualwave/has-own';
+import isFunction from '@actualwave/is-function';
 
 import {
   INFO_KEY,
@@ -17,7 +18,7 @@ const getTargetProperty = (createFn, target, property, value) => {
   const info = getTargetInfo(target);
   const { deep, children, names, checker } = info;
 
-  if (deep || value instanceof Function) {
+  if (deep || isFunction(value)) {
     const childInfo = getChildInfo(children, property);
 
     if (childInfo) {
@@ -33,9 +34,9 @@ const getTargetProperty = (createFn, target, property, value) => {
 
 const isIgnoredProperty = (target, info, property, value) => {
   if (
-    value instanceof Function &&
-    !hasOwn(target, property) &&
-    getProxyConfigValue(PROXY_IGNORE_PROTOTYPE_METHODS, info)
+    isFunction(value)
+    && !hasOwn(target, property)
+    && getProxyConfigValue(PROXY_IGNORE_PROTOTYPE_METHODS, info)
   ) {
     return true;
   }

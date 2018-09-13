@@ -33,6 +33,55 @@ const getProxyConfig = () => Object.assign({}, config);
 
 const getProxyConfigValue = (key, info = null) => hasOwn(info, key) ? info[key] : config[key];
 
+function unwrapExports (x) {
+	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+}
+
+function createCommonjsModule(fn, module) {
+	return module = { exports: {} }, fn(module, module.exports), module.exports;
+}
+
+var isFunction_1 = createCommonjsModule(function (module, exports) {
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+const isFunction = (target) => (typeof target === 'function');
+
+exports.isFunction = isFunction;
+exports.default = isFunction;
+});
+
+var isFunction = unwrapExports(isFunction_1);
+var isFunction_2 = isFunction_1.isFunction;
+
+var withProxy_1 = createCommonjsModule(function (module, exports) {
+
+Object.defineProperty(exports, '__esModule', { value: true });
+
+const { isFunction } = isFunction_1;
+
+const withProxy = (handlers) => {
+  /*
+   have problems with using rest operator here, when in node_modules without additional 
+   configurations, so using old style code
+  */
+  const { apply, construct } = handlers;
+
+  delete handlers.apply;
+  delete handlers.construct;
+
+  const functionHandlers = { ...handlers, construct, apply };
+
+  return (target) => new Proxy(target, isFunction(target) ? functionHandlers : handlers);
+};
+
+exports.withProxy = withProxy;
+exports.default = withProxy;
+});
+
+var withProxy = unwrapExports(withProxy_1);
+var withProxy_2 = withProxy_1.withProxy;
+
 /* eslint-disable import/prefer-default-export */
 
 const constructErrorString = (action, name, required, received) => `${action}Error on "${name}" instead of "${required}" received "${received}"`;
@@ -176,7 +225,7 @@ const getTargetProperty = (createFn, target, property, value) => {
   const info = getTargetInfo(target);
   const { deep, children, names, checker } = info;
 
-  if (deep || value instanceof Function) {
+  if (deep || isFunction(value)) {
     const childInfo = getChildInfo(children, property);
 
     if (childInfo) {
@@ -191,7 +240,7 @@ const getTargetProperty = (createFn, target, property, value) => {
 };
 
 const isIgnoredProperty = (target, info, property, value) => {
-  if (value instanceof Function && !hasOwn(target, property) && getProxyConfigValue(PROXY_IGNORE_PROTOTYPE_METHODS, info)) {
+  if (isFunction(value) && !hasOwn(target, property) && getProxyConfigValue(PROXY_IGNORE_PROTOTYPE_METHODS, info)) {
     return true;
   }
 
@@ -346,29 +395,7 @@ const callFunction = createFn => (target, thisArg, argumentsList) => {
   return result;
 };
 
-let getProperty$1;
-let setProperty$1;
-let callFunction$1;
-
-const objectProxy = target => new Proxy(target, {
-  get: getProperty$1,
-  set: setProperty$1
-});
-
-const functionProxy = target => new Proxy(target, {
-  get: getProperty$1,
-  set: setProperty$1,
-  apply: callFunction$1,
-  construct: callFunction$1
-});
-
-const wrapWithProxy = target => {
-  if (target instanceof Function) {
-    return functionProxy(target);
-  }
-
-  return objectProxy(target);
-};
+let wrapWithProxy; // eslint-disable-line
 
 const createInfoFromOptions = (target, {
   deep = true,
@@ -389,9 +416,16 @@ const create = (target, options) => {
   return wrapWithProxy(target);
 };
 
-getProperty$1 = getProperty(create);
-setProperty$1 = setProperty(create);
-callFunction$1 = callFunction(create);
+wrapWithProxy = (() => {
+  const callHandler = callFunction(create);
+
+  return withProxy({
+    get: getProperty(create),
+    set: setProperty(create),
+    apply: callHandler,
+    construct: callHandler
+  });
+})();
 
 const deepInitializer = (target, options) => {
   const info = createInfoFromOptions(target, options);

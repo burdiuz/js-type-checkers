@@ -1,3 +1,4 @@
+import withProxy from '@actualwave/with-proxy';
 import { getDefaultTypeChecker } from '../checkers';
 import { getErrorReporter } from '../reporters';
 import { isEnabled } from '../enabled';
@@ -11,37 +12,9 @@ import getPropertyInit from './getProperty';
 import setPropertyInit from './setProperty';
 import callFunctionInit from './callFunction';
 
-let getProperty;
-let setProperty;
-let callFunction;
+let wrapWithProxy; // eslint-disable-line
 
-const objectProxy = (target) => new Proxy(
-  target,
-  {
-    get: getProperty,
-    set: setProperty,
-  },
-);
-
-const functionProxy = (target) => new Proxy(
-  target,
-  {
-    get: getProperty,
-    set: setProperty,
-    apply: callFunction,
-    construct: callFunction,
-  },
-);
-
-export const wrapWithProxy = (target) => {
-  if (target instanceof Function) {
-    return functionProxy(target);
-  }
-
-  return objectProxy(target);
-};
-
-export const createInfoFromOptions = (target, {
+const createInfoFromOptions = (target, {
   deep = true,
   names = [],
   config = null,
@@ -69,8 +42,20 @@ const create = (target, options) => {
   return wrapWithProxy(target);
 };
 
-getProperty = getPropertyInit(create);
-setProperty = setPropertyInit(create);
-callFunction = callFunctionInit(create);
+wrapWithProxy = (() => {
+  const callHandler = callFunctionInit(create);
+
+  return withProxy({
+    get: getPropertyInit(create),
+    set: setPropertyInit(create),
+    apply: callHandler,
+    construct: callHandler,
+  });
+})();
+
+export {
+  createInfoFromOptions,
+  wrapWithProxy,
+};
 
 export default create;

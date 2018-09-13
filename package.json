@@ -19,7 +19,9 @@
     "url": "https://github.com/burdiuz/js-type-checkers.git"
   },
   "dependencies": {
-    "@actualwave/has-own": "^0.0.1"
+    "@actualwave/has-own": "^0.0.1",
+    "@actualwave/is-function": "^0.0.1",
+    "@actualwave/with-proxy": "^0.0.1"
   },
   "devDependencies": {
     "babel-core": "^6.26.3",
