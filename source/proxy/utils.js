@@ -1,27 +1,17 @@
 /* eslint-disable import/prefer-default-export */
 
-import { isTypeChecked, isValidTarget } from '../utils';
-import { getChildInfo, storeChildInfoFrom } from '../target/info';
+import { isWrappable } from '../utils';
 
-export const getTypeCheckedChild = (createFn, info, name, value) => {
-  if (!isValidTarget(value)) {
+export const getTypeCheckedChild = (wrapFn, info, name, value) => {
+  if (!isWrappable(value)) {
     return value;
   }
 
-  let result = value;
+  const childInfo = info.getChild(name);
 
-  if (!isTypeChecked(value)) {
-    const { children } = info;
-    const childInfo = getChildInfo(children, name);
-
-    if (childInfo) {
-      result = createFn(value, { info: childInfo });
-    } else {
-      const { deep, names, checker } = info;
-      result = createFn(value, { deep, names: [...names, name], checker });
-      storeChildInfoFrom(children, name, result);
-    }
+  if (childInfo) {
+    return wrapFn(value, childInfo);
   }
 
-  return result;
+  return wrapFn(value, info.createChild(name));
 };

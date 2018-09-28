@@ -13,25 +13,25 @@ const setDefaultTypeChecker = typeChecker => {
   defaultTypeChecker = typeChecker;
 };
 
-const PROXY_WRAP_FUNCTION_RETURN_VALUES = 'wrapFunctionReturnValues';
-const PROXY_WRAP_FUNCTION_ARGUMENTS = 'wrapFunctionArguments';
-const PROXY_WRAP_SET_PROPERTY_VALUES = 'wrapSetPropertyValues';
+const WRAP_FUNCTION_RETURN_VALUES = 'wrapFunctionReturnValues';
+const WRAP_FUNCTION_ARGUMENTS = 'wrapFunctionArguments';
+const WRAP_SET_PROPERTY_VALUES = 'wrapSetPropertyValues';
 const PROXY_IGNORE_PROTOTYPE_METHODS = 'ignorePrototypeMethods';
 
-const getDefaultProxyConfig = () => ({
-  [PROXY_WRAP_FUNCTION_RETURN_VALUES]: true,
-  [PROXY_WRAP_FUNCTION_ARGUMENTS]: false,
-  [PROXY_WRAP_SET_PROPERTY_VALUES]: true,
+const getDefaultWrapConfig = () => ({
+  [WRAP_FUNCTION_RETURN_VALUES]: true,
+  [WRAP_FUNCTION_ARGUMENTS]: false,
+  [WRAP_SET_PROPERTY_VALUES]: true,
   [PROXY_IGNORE_PROTOTYPE_METHODS]: false
 });
 
-const config = getDefaultProxyConfig();
+const config = getDefaultWrapConfig();
 
-const setProxyConfig = newConfig => Object.assign(config, newConfig);
+const setWrapConfig = newConfig => Object.assign(config, newConfig);
 
-const getProxyConfig = () => Object.assign({}, config);
+const getWrapConfig = () => Object.assign({}, config);
 
-const getProxyConfigValue = (key, info = null) => hasOwn(info, key) ? info[key] : config[key];
+const getWrapConfigValue = (key, info = null) => hasOwn(info, key) ? info[key] : config[key];
 
 function unwrapExports (x) {
 	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
@@ -62,7 +62,7 @@ const { isFunction } = isFunction_1;
 
 const withProxy = (handlers) => {
   /*
-   have problems with using rest operator here, when in node_modules without additional 
+   have problems with using rest operator here, when in node_modules without additional
    configurations, so using old style code
   */
   const { apply, construct } = handlers;
@@ -136,7 +136,7 @@ const setTargetInfo = (target, info) => {
 const hasTargetInfo = target => !!getTargetInfo(target);
 
 // TODO three times getting same, might need optimizing
-const getTargetTypeChecker = target => {
+const getTypeChecker = target => {
   if (target) {
     const info = target[INFO_KEY];
 
@@ -146,7 +146,7 @@ const getTargetTypeChecker = target => {
   return undefined;
 };
 
-const getTargetTypeCheckerConfig = target => {
+const getTypeCheckerData = target => {
   if (target) {
     const info = target[INFO_KEY];
 
@@ -211,17 +211,17 @@ const mergeTargetInfo = (targetInfo, sourceInfo) => {
 
 const TARGET_KEY = Symbol('type-checkers::target');
 
-const getOriginalTarget = target => target && target[TARGET_KEY] || target;
+const unwrap = target => target && target[TARGET_KEY] || target;
 
 const validTypes = {
   object: true,
   function: true
 };
 
-const isValidTarget = target => Boolean(target && validTypes[typeof target]);
-const isTypeChecked = target => Boolean(target && target[TARGET_KEY]);
+const isWrappable = target => Boolean(target && validTypes[typeof target]);
+const isWrapped = target => Boolean(target && target[TARGET_KEY]);
 
-const getTargetProperty = (createFn, target, property, value) => {
+const getTargetProperty = (wrapFn, target, property, value) => {
   const info = getTargetInfo(target);
   const { deep, children, names, checker } = info;
 
@@ -229,9 +229,9 @@ const getTargetProperty = (createFn, target, property, value) => {
     const childInfo = getChildInfo(children, property);
 
     if (childInfo) {
-      value = createFn(value, { info: childInfo });
+      value = wrapFn(value, { info: childInfo });
     } else {
-      value = createFn(value, { deep, names: [...names, property], checker });
+      value = wrapFn(value, { deep, names: [...names, property], checker });
       storeChildInfoFrom(children, property, value);
     }
   }
@@ -240,14 +240,14 @@ const getTargetProperty = (createFn, target, property, value) => {
 };
 
 const isIgnoredProperty = (target, info, property, value) => {
-  if (isFunction(value) && !hasOwn(target, property) && getProxyConfigValue(PROXY_IGNORE_PROTOTYPE_METHODS, info)) {
+  if (isFunction(value) && !hasOwn(target, property) && getWrapConfigValue(PROXY_IGNORE_PROTOTYPE_METHODS, info)) {
     return true;
   }
 
   return false;
 };
 
-const getProperty = createFn => (target, property) => {
+const getProperty = wrapFn => (target, property) => {
   const value = target[property];
 
   if (property === INFO_KEY) {
@@ -267,11 +267,11 @@ const getProperty = createFn => (target, property) => {
     checker.getProperty(target, property, value, config, names);
   }
 
-  if (!isValidTarget(value) || isTypeChecked(value) || isIgnoredProperty(target, info, property, value)) {
+  if (!isWrappable(value) || isWrapped(value) || isIgnoredProperty(target, info, property, value)) {
     return value;
   }
 
-  return getTargetProperty(createFn, target, property, value);
+  return getTargetProperty(wrapFn, target, property, value);
 };
 
 const setNonTargetProperty = (target, property, value) => {
@@ -285,7 +285,7 @@ const setNonTargetProperty = (target, property, value) => {
 
     target[property] = info;
     return true;
-  } else if (!isValidTarget(value)) {
+  } else if (!isWrappable(value)) {
     const { names, config, checker } = getTargetInfo(target);
 
     if (checker.setProperty) {
@@ -299,7 +299,7 @@ const setNonTargetProperty = (target, property, value) => {
   return false;
 };
 
-const setTargetProperty = (createFn, target, property, value) => {
+const setTargetProperty = (wrapFn, target, property, value) => {
   const info = getTargetInfo(target);
   const { deep, names, checker, config, children } = info;
 
@@ -307,14 +307,14 @@ const setTargetProperty = (createFn, target, property, value) => {
     checker.setProperty(target, property, value, config, names);
   }
 
-  if (getProxyConfigValue(PROXY_WRAP_SET_PROPERTY_VALUES, info)) {
-    if (!isTypeChecked(value)) {
+  if (getWrapConfigValue(WRAP_SET_PROPERTY_VALUES, info)) {
+    if (!isWrapped(value)) {
       const childInfo = getChildInfo(children, property);
 
       if (childInfo) {
-        value = createFn(value, { info: childInfo });
+        value = wrapFn(value, { info: childInfo });
       } else {
-        value = createFn(value, { deep, names: [...names, property], checker });
+        value = wrapFn(value, { deep, names: [...names, property], checker });
       }
     }
 
@@ -325,32 +325,32 @@ const setTargetProperty = (createFn, target, property, value) => {
   return true;
 };
 
-const setProperty = createFn => (target, property, value) => {
+const setProperty = wrapFn => (target, property, value) => {
   if (property === TARGET_KEY) {
     throw new Error(`"${TARGET_KEY}" is a virtual property and cannot be set`);
   }
 
-  return setNonTargetProperty(target, property, value) || setTargetProperty(createFn, target, property, value);
+  return setNonTargetProperty(target, property, value) || setTargetProperty(wrapFn, target, property, value);
 };
 
 /* eslint-disable import/prefer-default-export */
 
-const getTypeCheckedChild = (createFn, info, name, value) => {
-  if (!isValidTarget(value)) {
+const getTypeCheckedChild = (wrapFn, info, name, value) => {
+  if (!isWrappable(value)) {
     return value;
   }
 
   let result = value;
 
-  if (!isTypeChecked(value)) {
+  if (!isWrapped(value)) {
     const { children } = info;
     const childInfo = getChildInfo(children, name);
 
     if (childInfo) {
-      result = createFn(value, { info: childInfo });
+      result = wrapFn(value, { info: childInfo });
     } else {
       const { deep, names, checker } = info;
-      result = createFn(value, { deep, names: [...names, name], checker });
+      result = wrapFn(value, { deep, names: [...names, name], checker });
       storeChildInfoFrom(children, name, result);
     }
   }
@@ -358,21 +358,21 @@ const getTypeCheckedChild = (createFn, info, name, value) => {
   return result;
 };
 
-const getTargetArguments = (createFn, target, argumentsList) => {
+const getTargetArguments = (wrapFn, target, argumentsList) => {
   const info = getTargetInfo(target);
 
-  if (getProxyConfigValue(PROXY_WRAP_FUNCTION_ARGUMENTS, info)) {
+  if (getWrapConfigValue(WRAP_FUNCTION_ARGUMENTS, info)) {
     const { length } = argumentsList;
     // FIXME cache arguments info objects as children
     for (let index = 0; index < length; index++) {
-      argumentsList[index] = getTypeCheckedChild(createFn, info, String(index), argumentsList[index]);
+      argumentsList[index] = getTypeCheckedChild(wrapFn, info, String(index), argumentsList[index]);
     }
   }
 
   return argumentsList;
 };
 
-const callFunction = createFn => (target, thisArg, argumentsList) => {
+const callFunction = wrapFn => (target, thisArg, argumentsList) => {
   const info = getTargetInfo(target);
   const { names, config, checker } = info;
 
@@ -380,7 +380,7 @@ const callFunction = createFn => (target, thisArg, argumentsList) => {
     checker.arguments(target, thisArg, argumentsList, config, names);
   }
 
-  argumentsList = getTargetArguments(createFn, target, argumentsList);
+  argumentsList = getTargetArguments(wrapFn, target, argumentsList);
 
   let result = target.apply(thisArg, argumentsList);
 
@@ -388,8 +388,8 @@ const callFunction = createFn => (target, thisArg, argumentsList) => {
     checker.returnValue(target, thisArg, result, config, names);
   }
 
-  if (getProxyConfigValue(PROXY_WRAP_FUNCTION_RETURN_VALUES, info)) {
-    result = getTypeCheckedChild(createFn, info, 'returnValue', result);
+  if (getWrapConfigValue(WRAP_FUNCTION_RETURN_VALUES, info)) {
+    result = getTypeCheckedChild(wrapFn, info, 'returnValue', result);
   }
 
   return result;
@@ -407,7 +407,7 @@ const createInfoFromOptions = (target, {
 } = {}) => info || createTargetInfo(checker, checker.init(target, getErrorReporter(), config), deep, names, createChildrenCache(children));
 
 const create = (target, options) => {
-  if (!isValidTarget(target) || !isEnabled() || isTypeChecked(target)) {
+  if (!isWrappable(target) || !isEnabled() || isWrapped(target)) {
     return target;
   }
 
@@ -436,7 +436,7 @@ const deepInitializer = (target, options) => {
 
     checker.getProperty(target, name, value, config, names);
 
-    if (isValidTarget(value)) {
+    if (isWrappable(value)) {
       let childInfo = getChildInfo(children, name);
 
       if (childInfo) {
@@ -458,7 +458,7 @@ const deepInitializer = (target, options) => {
 };
 
 const createDeep = (target, options) => {
-  if (!target || typeof target !== 'object' || !isEnabled() || isTypeChecked(target)) {
+  if (!target || typeof target !== 'object' || !isEnabled() || isWrapped(target)) {
     return target;
   }
 
@@ -490,7 +490,7 @@ const properties = (target, options = undefined, ...names) => {
     return target;
   }
 
-  if (!isValidTarget(target)) {
+  if (!isWrappable(target)) {
     throw new Error('Target must be a valid object.');
   }
 
@@ -512,7 +512,7 @@ const properties = (target, options = undefined, ...names) => {
     if (get && set || writable) {
       const value = target[name];
 
-      if (isValidTarget(value) && !isTypeChecked(value)) {
+      if (isWrappable(value) && !isWrapped(value)) {
         target[name] = create(value, options);
       }
     }
@@ -523,13 +523,13 @@ const properties = (target, options = undefined, ...names) => {
 
 exports.getDefaultTypeChecker = getDefaultTypeChecker;
 exports.setDefaultTypeChecker = setDefaultTypeChecker;
-exports.PROXY_WRAP_FUNCTION_RETURN_VALUES = PROXY_WRAP_FUNCTION_RETURN_VALUES;
-exports.PROXY_WRAP_FUNCTION_ARGUMENTS = PROXY_WRAP_FUNCTION_ARGUMENTS;
-exports.PROXY_WRAP_SET_PROPERTY_VALUES = PROXY_WRAP_SET_PROPERTY_VALUES;
+exports.WRAP_FUNCTION_RETURN_VALUES = WRAP_FUNCTION_RETURN_VALUES;
+exports.WRAP_FUNCTION_ARGUMENTS = WRAP_FUNCTION_ARGUMENTS;
+exports.WRAP_SET_PROPERTY_VALUES = WRAP_SET_PROPERTY_VALUES;
 exports.PROXY_IGNORE_PROTOTYPE_METHODS = PROXY_IGNORE_PROTOTYPE_METHODS;
-exports.getDefaultProxyConfig = getDefaultProxyConfig;
-exports.setProxyConfig = setProxyConfig;
-exports.getProxyConfig = getProxyConfig;
+exports.getDefaultWrapConfig = getDefaultWrapConfig;
+exports.setWrapConfig = setWrapConfig;
+exports.getWrapConfig = getWrapConfig;
 exports.create = create;
 exports.createDeep = createDeep;
 exports.ConsoleErrorReporter = ConsoleErrorReporter;
@@ -542,13 +542,13 @@ exports.setEnabled = setEnabled;
 exports.getTargetInfo = getTargetInfo;
 exports.setTargetInfo = setTargetInfo;
 exports.hasTargetInfo = hasTargetInfo;
-exports.getTargetTypeChecker = getTargetTypeChecker;
-exports.getTargetTypeCheckerConfig = getTargetTypeCheckerConfig;
+exports.getTypeChecker = getTypeChecker;
+exports.getTypeCheckerData = getTypeCheckerData;
 exports.mergeTargetInfo = mergeTargetInfo;
-exports.getOriginalTarget = getOriginalTarget;
+exports.unwrap = unwrap;
 exports.merge = merge;
 exports.properties = properties;
-exports.isTypeChecked = isTypeChecked;
-exports.isValidTarget = isValidTarget;
+exports.isWrapped = isWrapped;
+exports.isWrappable = isWrappable;
 exports.default = create;
 //# sourceMappingURL=type-checkers.js.map

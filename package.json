@@ -19,8 +19,11 @@
     "url": "https://github.com/burdiuz/js-type-checkers.git"
   },
   "dependencies": {
+    "@actualwave/get-class": "^0.0.1",
     "@actualwave/has-own": "^0.0.1",
     "@actualwave/is-function": "^0.0.1",
+    "@actualwave/path-sequence-to-string": "^0.0.3",
+    "@actualwave/type-checker-simple-reporting": "^0.0.2",
     "@actualwave/with-proxy": "^0.0.1"
   },
   "devDependencies": {
@@ -58,12 +61,6 @@
       "eslint --fix",
       "git add"
     ]
-  },
-  "prettier": {
-    "singleQuote": true,
-    "trailing-comma": "es5",
-    "arrowParens": "always",
-    "parser": "flow"
   },
   "babel": {
     "env": {

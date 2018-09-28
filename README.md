@@ -65,3 +65,5 @@ Library that reports assignments of values or function arguments, return values 
 13. +Move primitive type checker into separate repo
 14. Add possibility to register ignored names which will be just skipped whatewer is placed in, probably could be added to ExtendedTypeChecker.
 15. Add methods to convert info objects into primitives and back so they could be stored, would be good to have a system that permanently stores types info for consecutive runs.
+16. Add persistent type storages that may be bound to class and once type checker gets its instance, storage is used
+17. Add a function that will allow to wrap classes, like wrapClass(class, ...), just like create(). It should return instanciable Proxy which will create wrapped instances.
