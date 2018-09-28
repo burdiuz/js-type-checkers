@@ -11,10 +11,24 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
     crossorigin="anonymous"></script>
   <base href="/">
-  <script src="dist/type-checkers.js"></script>
+  <script src="dist/type-checkers.min.js"></script>
   <style type="text/css">
   </style>
   <script type="text/javascript">
+
+    TypeCheckers.setDefaultTypeChecker({
+      init(target, errorReporter, data) {
+        console.log('init:', target);
+        return {};
+      },
+      getProperty(target, names, value, data) {
+        console.log('get:', target, names, value, data);
+      },
+      setProperty(target, names, value, data) {
+        console.log('set:', target, names, value, data);
+      }
+    });
+
     class MyClass {
       constructor(arg) {
         this.value = arg;
@@ -41,12 +55,12 @@
       },
     };
 
-    const typeChecked = TypeCheckers.createDeep(myObj);
+    const typeChecked = TypeCheckers.wrapDeep(myObj);
 
     // this code will work as intended, but type errors should spam
     typeChecked.val1 = 'abc';
     typeChecked.val2 = { shouldBeString: true };
-
+/*
     // when indexed typing enabled
     TypeCheckers.PrimitiveTypeChecker.setIndexValueTypeBy(typeChecked.list, 0);
     typeChecked.list[0] = 'string';
@@ -114,6 +128,7 @@
 
     // should show errors on mergeing incompatible type definitions.
     console.log(Object.assign(typeChecked, typeCheckedSource));
+    */
   </script>
 </head>
 

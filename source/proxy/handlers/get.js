@@ -1,11 +1,9 @@
 import hasOwn from '@actualwave/has-own';
 import isFunction from '@actualwave/is-function';
 
-import { INFO_KEY, getTargetInfo } from '../../info/target';
-
-import { getWrapConfigValue, WRAP_IGNORE_PROTOTYPE_METHODS } from '../../config/wrap-config';
-
 import { isWrappable, TARGET_KEY } from '../../utils';
+import { INFO_KEY, getTargetInfo } from '../../info';
+import { getWrapConfigValue, WRAP_IGNORE_PROTOTYPE_METHODS } from '../../config/wrap-config';
 
 const getTargetProperty = (wrapFn, target, names, value) => {
   const info = getTargetInfo(target);
@@ -20,7 +18,7 @@ const getTargetProperty = (wrapFn, target, names, value) => {
       return wrapFn(value, childInfo);
     }
 
-    return wrapFn(value, info.createChildWithNames(names));
+    return wrapFn(value, info.createChildWithNames(names, value));
   }
 
   return value;

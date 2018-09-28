@@ -1,4 +1,6 @@
 import { createPathSequence } from '@actualwave/path-sequence-to-string';
+
+import { getErrorReporter } from '../config/error-reporter';
 import { createChildrenCache } from './children';
 
 export const INFO_KEY = Symbol('type-checkers::info');
@@ -42,21 +44,21 @@ class TargetInfo {
     }
   }
 
-  createChild(name, data = null) {
-    const childInfo = new TargetInfo(this.checker, data, this.deep, this.names.clone(name));
-
-    this.children.store(name, childInfo);
-
-    return childInfo;
-  }
-
-
-  createChildWithNames(names, data = null) {
-    const childInfo = new TargetInfo(this.checker, data, this.deep, names);
+  createChildWithNames(names, value, data = null) {
+    const childInfo = new TargetInfo(
+      this.checker,
+      this.checker.init(value, getErrorReporter(), data),
+      this.deep,
+      names,
+    );
 
     this.children.store(names.lastName, childInfo);
 
     return childInfo;
+  }
+
+  createChild(name, value, data = null) {
+    return this.createChildWithNames(this.names.clone(name), value, data);
   }
 
   copy({ deep, checker, children, data, names }) {

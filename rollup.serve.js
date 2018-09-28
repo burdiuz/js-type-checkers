@@ -5,10 +5,11 @@ export default {
   ...baseConfig,
   plugins: [
     ...plugins,
-	serve({
+    serve({
       open: true,
-	  port: 8081,
-	    contentBase: '.',
-	}),
+      openPage: '/example/index.html',
+      port: 8081,
+      contentBase: '.',
+    }),
   ],
 };

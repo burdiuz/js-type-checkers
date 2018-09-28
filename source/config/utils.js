@@ -15,7 +15,7 @@ export const singleConfigFactory = (defaultValue = null, validator = undefined) 
   };
 };
 
-export const mapConfigFactory = (defaultValues = {}) => {
+export const mapConfigFactory = (defaultValues = {}, validator = undefined) => {
   const getDefault = () => ({ ...defaultValues });
 
   const values = getDefault();
@@ -23,8 +23,8 @@ export const mapConfigFactory = (defaultValues = {}) => {
   return {
     values,
     getDefault,
-    set: (newValues) => Object.assign(values, newValues),
+    set: (newValues) => Object.assign(values, validator ? validator(newValues) : newValues),
     get: () => ({ ...values }),
-    getValue: (key, target = values) => (hasOwn(target, key) ? target[key] : undefined),
+    getValue: (key) => (hasOwn(values, key) ? values[key] : undefined),
   };
 };

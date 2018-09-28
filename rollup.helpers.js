@@ -40,7 +40,12 @@ export const baseConfig = {
   ],
   plugins,
   external: [
+    '@actualwave/get-class',
     '@actualwave/has-own',
+    '@actualwave/is-function',
+    '@actualwave/path-sequence-to-string',
+    '@actualwave/type-checker-simple-reporting',
+    '@actualwave/with-proxy',
   ],
 };
 
@@ -57,6 +62,6 @@ export const minConfig = {
   ],
   plugins: [
     ...plugins,
-    uglify({}, minify),
+    // uglify({}, minify),
   ],
 };

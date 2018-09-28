@@ -1,9 +1,5 @@
-import {
-  INFO_KEY,
-  getTargetInfo,
-} from '../target/info';
-
-import { TARGET_KEY } from '../target/proxy';
+import { INFO_KEY, getTargetInfo } from '../../info';
+import { TARGET_KEY } from '../../utils';
 
 const deletePropertyFactory = () => (target, property) => {
   if (property === INFO_KEY) {
@@ -12,12 +8,10 @@ const deletePropertyFactory = () => (target, property) => {
     return false;
   }
 
-
-  const value = target[property];
   const info = getTargetInfo(target);
   const { names, data, checker } = info;
 
-  checker.deleteProperty(target, property, value, data, names);
+  checker.deleteProperty(target, names.clone(property), data);
 
   return delete target[property];
 };

@@ -5,125 +5,176 @@ Object.defineProperty(exports, '__esModule', { value: true });
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
 var hasOwn = _interopDefault(require('@actualwave/has-own'));
+var typeCheckerSimpleReporting = require('@actualwave/type-checker-simple-reporting');
+var getClass = require('@actualwave/get-class');
+var pathSequenceToString = require('@actualwave/path-sequence-to-string');
+var isFunction = _interopDefault(require('@actualwave/is-function'));
+var withProxy = _interopDefault(require('@actualwave/with-proxy'));
 
-let defaultTypeChecker = null;
+const singleConfigFactory = (defaultValue = null, validator = undefined) => {
+  let value = defaultValue;
 
-const getDefaultTypeChecker = () => defaultTypeChecker;
-const setDefaultTypeChecker = typeChecker => {
-  defaultTypeChecker = typeChecker;
+  return {
+    get: () => value,
+    set: (newValue = defaultValue) => {
+      if (validator) {
+        value = validator(newValue);
+      } else {
+        value = newValue;
+      }
+    }
+  };
 };
+
+const mapConfigFactory = (defaultValues = {}, validator = undefined) => {
+  const getDefault = () => Object.assign({}, defaultValues);
+
+  const values = getDefault();
+
+  return {
+    values,
+    getDefault,
+    set: newValues => Object.assign(values, validator ? validator(newValues) : newValues),
+    get: () => Object.assign({}, values),
+    getValue: key => hasOwn(values, key) ? values[key] : undefined
+  };
+};
+
+const {
+  get: getDefaultTypeChecker,
+  set: setDefaultTypeChecker
+} = singleConfigFactory();
+
+const {
+  get: isEnabled,
+  set: setEnabled
+} = singleConfigFactory(true, value => !!value);
+
+const {
+  get: getErrorReporter,
+  set: setErrorReporter
+} = singleConfigFactory(typeCheckerSimpleReporting.ConsoleErrorReporter);
+
+/*
+ When ignoring class, its instances will never be wrapped.
+*/
+const constructors = new Set();
+
+const addIgnoredClasses = (...classes) => {
+  classes.forEach(constructor => {
+    if (constructor && !constructors.has(constructor)) {
+      constructors.add(constructor);
+    }
+  });
+};
+
+const removeIgnoredClasses = (...classes) => {
+  classes.forEach(constructor => constructors.delete(constructor));
+};
+
+const isIgnoredClass = constructor => constructors.has(constructor);
+
+const isValueOfIgnoredClass = value => constructors.has(getClass.getClass(value));
+
+/**
+ * Number, String, Boolean and Symbol will not pass
+ *
+ *  typeof === 'object' || typeof === 'function'
+ *
+ * check, so not need to add them.
+ */
+addIgnoredClasses(Map, Set, Date, Error);
 
 const WRAP_FUNCTION_RETURN_VALUES = 'wrapFunctionReturnValues';
 const WRAP_FUNCTION_ARGUMENTS = 'wrapFunctionArguments';
 const WRAP_SET_PROPERTY_VALUES = 'wrapSetPropertyValues';
-const PROXY_IGNORE_PROTOTYPE_METHODS = 'ignorePrototypeMethods';
+const WRAP_IGNORE_PROTOTYPE_METHODS = 'ignorePrototypeMethods';
 
-const getDefaultWrapConfig = () => ({
+const {
+  values,
+  getDefault: getDefaultWrapConfig,
+  get: getWrapConfig,
+  set: setWrapConfig,
+  // FIXME incorrect behaviour, it should fallback to glbal config if undefined in target
+  // FIXME should add instruments to define this config for wrapped target
+  getValue
+} = mapConfigFactory({
   [WRAP_FUNCTION_RETURN_VALUES]: true,
   [WRAP_FUNCTION_ARGUMENTS]: false,
   [WRAP_SET_PROPERTY_VALUES]: true,
-  [PROXY_IGNORE_PROTOTYPE_METHODS]: false
-});
+  [WRAP_IGNORE_PROTOTYPE_METHODS]: false
+}, newValues => Object.keys(newValues).forEach(key => {
+  newValues[key] = !!newValues[key];
+}));
 
-const config = getDefaultWrapConfig();
+const getWrapConfigValue = (name, target) => {
+  let value = target[name];
 
-const setWrapConfig = newConfig => Object.assign(config, newConfig);
+  if (target) {
+    value = target[name];
+  }
 
-const getWrapConfig = () => Object.assign({}, config);
+  return value === undefined ? getValue(name) : value;
+};
 
-const getWrapConfigValue = (key, info = null) => hasOwn(info, key) ? info[key] : config[key];
+/*
+  I have had to apply custom key instead of name as is to
+  fix "construtor" issue. Since ordinary object has some
+  properties with values from start, these properties were
+  mustakenly returned as child info objects, for example, if
+  requesting hild info for "constructor" function of the target,
+  it returned class constructor which caused errors later,
+  when accesing info properties.
+ */
+const getChildInfoKey = name => `@${name}`;
 
-function unwrapExports (x) {
-	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+class ChildrenCache {
+  constructor(children) {
+    if (children) {
+      this.cache = Object.assign({}, children.cache);
+    } else {
+      this.cache = {};
+    }
+  }
+
+  store(name, childInfo) {
+    const key = getChildInfoKey(name);
+
+    if (childInfo) {
+      this.cache[key] = childInfo;
+    } else {
+      delete this.cache[key];
+    }
+  }
+
+  get(name) {
+    return this.cache[getChildInfoKey(name)];
+  }
+
+  has(name) {
+    return !!this.cache[getChildInfoKey(name)];
+  }
+
+  remove(cache, name) {
+    return delete this.cache[getChildInfoKey(name)];
+  }
+
+  copy({ cache: sourceCache }) {
+    Object.keys(sourceCache).forEach(key => {
+      if (hasOwn(this.cache, key)) {
+        this.cache[key].copy(sourceCache[key]);
+      } else {
+        this.cache[key] = sourceCache[key];
+      }
+    });
+
+    return this;
+  }
 }
 
-function createCommonjsModule(fn, module) {
-	return module = { exports: {} }, fn(module, module.exports), module.exports;
-}
-
-var isFunction_1 = createCommonjsModule(function (module, exports) {
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
-const isFunction = (target) => (typeof target === 'function');
-
-exports.isFunction = isFunction;
-exports.default = isFunction;
-});
-
-var isFunction = unwrapExports(isFunction_1);
-var isFunction_2 = isFunction_1.isFunction;
-
-var withProxy_1 = createCommonjsModule(function (module, exports) {
-
-Object.defineProperty(exports, '__esModule', { value: true });
-
-const { isFunction } = isFunction_1;
-
-const withProxy = (handlers) => {
-  /*
-   have problems with using rest operator here, when in node_modules without additional
-   configurations, so using old style code
-  */
-  const { apply, construct } = handlers;
-
-  delete handlers.apply;
-  delete handlers.construct;
-
-  const functionHandlers = { ...handlers, construct, apply };
-
-  return (target) => new Proxy(target, isFunction(target) ? functionHandlers : handlers);
-};
-
-exports.withProxy = withProxy;
-exports.default = withProxy;
-});
-
-var withProxy = unwrapExports(withProxy_1);
-var withProxy_2 = withProxy_1.withProxy;
-
-/* eslint-disable import/prefer-default-export */
-
-const constructErrorString = (action, name, required, received) => `${action}Error on "${name}" instead of "${required}" received "${received}"`;
-
-/* eslint-disable no-console */
-
-const ConsoleErrorReporter = (action, name, requiredTypeString, actualTypeString) => console.error(constructErrorString(action, name, requiredTypeString, actualTypeString));
-
-const ConsoleWarnReporter = (action, name, requiredTypeString, actualTypeString) => console.warn(constructErrorString(action, name, requiredTypeString, actualTypeString));
-
-/* eslint-disable import/prefer-default-export */
-
-const ThrowErrorReporter = (action, name, requiredTypeString, receivedTypeString) => {
-  throw new Error(constructErrorString(action, name, requiredTypeString, receivedTypeString));
-};
-
-let errorReporter = ConsoleErrorReporter;
-
-const getErrorReporter = () => errorReporter;
-
-const setErrorReporter = reporter => {
-  errorReporter = reporter;
-};
-
-let enabled = true;
-
-const isEnabled = () => enabled;
-const setEnabled = (value = true) => {
-  enabled = !!value;
-};
+const createChildrenCache = children => new ChildrenCache(children);
 
 const INFO_KEY = Symbol('type-checkers::info');
-
-const createChildrenCache = (children = {}) => Object.assign({}, children);
-
-const createTargetInfo = (checker, config, deep = true, names = [], children = createChildrenCache()) => ({
-  checker,
-  config,
-  deep,
-  names,
-  children
-});
 
 const getTargetInfo = target => target ? target[INFO_KEY] : undefined;
 
@@ -133,9 +184,56 @@ const setTargetInfo = (target, info) => {
   }
 };
 
-const hasTargetInfo = target => !!getTargetInfo(target);
+const removeTargetInfo = target => delete target[INFO_KEY];
 
-// TODO three times getting same, might need optimizing
+class TargetInfo {
+  constructor(checker, data = null, deep = true, names = pathSequenceToString.createPathSequence(), children = createChildrenCache()) {
+    this.checker = checker;
+    this.data = data;
+    this.deep = deep;
+    this.names = names;
+    this.children = children;
+  }
+
+  getChild(name) {
+    return this.children.get(name);
+  }
+
+  storeChildFrom(name, child) {
+    const info = getTargetInfo(child);
+
+    if (info) {
+      this.children.store(name, info);
+    }
+  }
+
+  createChildWithNames(names, value, data = null) {
+    const childInfo = new TargetInfo(this.checker, this.checker.init(value, getErrorReporter(), data), this.deep, names);
+
+    this.children.store(names.lastName, childInfo);
+
+    return childInfo;
+  }
+
+  createChild(name, value, data = null) {
+    return this.createChildWithNames(this.names.clone(name), value, data);
+  }
+
+  copy({ deep, checker, children, data, names }) {
+    if (this.checker === checker) {
+      this.deep = this.deep || deep;
+      this.children.copy(children);
+      this.data = checker.mergeConfigs(this.data, data, names);
+    } else {
+      console.error('TypeChecked objects can be merged only if using exactly same instance of type checker.');
+    }
+
+    return this;
+  }
+}
+
+const createTargetInfo = (checker, data, deep, names, children) => new TargetInfo(checker, data, deep, names, children);
+
 const getTypeChecker = target => {
   if (target) {
     const info = target[INFO_KEY];
@@ -150,104 +248,57 @@ const getTypeCheckerData = target => {
   if (target) {
     const info = target[INFO_KEY];
 
-    return info && info.config || undefined;
+    return info && info.data || undefined;
   }
 
   return undefined;
 };
 
-/*
-  I have had to apply custom key instead of name as is to
-  fix "construtor" issue. Since ordinary object has some
-  properties with values from start, these properties were
-  mustakenly returned as child info objects, for example, if
-  requesting hild info for "constructor" function of the target,
-  it returned class constructor which caused errors later,
-  when accesing info properties.
- */
-const getChildInfoKey = name => `@${name}`;
-
-const mergeChildrenCache = (targetCache, sourceCache) => {
-  for (const key in sourceCache) {
-    if (hasOwn(targetCache, key)) {
-      // eslint-disable-next-line no-use-before-define
-      targetCache[key] = mergeTargetInfo(targetCache[key], sourceCache[key]);
-    } else {
-      targetCache[key] = sourceCache[key];
-    }
-  }
-
-  return targetCache;
-};
-
-const storeChildInfo = (cache, name, childInfo) => {
-  const key = getChildInfoKey(name);
-  delete cache[key];
-
-  if (childInfo) {
-    cache[key] = childInfo;
-  }
-};
-
-const storeChildInfoFrom = (cache, name, child) => {
-  storeChildInfo(cache, name, getTargetInfo(child));
-};
-
-const getChildInfo = (cache, name) => cache[getChildInfoKey(name)];
-
-const mergeTargetInfo = (targetInfo, sourceInfo) => {
-  const { deep, checker, children, config, names } = targetInfo;
-
-  if (checker === sourceInfo.checker) {
-    targetInfo.deep = deep || sourceInfo.deep;
-    targetInfo.children = mergeChildrenCache(children, sourceInfo.children);
-    targetInfo.config = checker.mergeConfigs(config, sourceInfo.config, names);
-  } else {
-    console.error('TypeChecked objects can be merged only if using exactly same instance of type checker.');
-  }
-
-  return targetInfo;
-};
-
 const TARGET_KEY = Symbol('type-checkers::target');
+
+const isOfWrappableType = target => {
+  const type = typeof target;
+
+  return Boolean(target) && (type === 'function' || type === 'object') && !isValueOfIgnoredClass(target);
+};
+
+const isWrapped = target => Boolean(target && target[TARGET_KEY]);
+
+const isWrappable = target => isOfWrappableType(target) && !isWrapped(target);
 
 const unwrap = target => target && target[TARGET_KEY] || target;
 
-const validTypes = {
-  object: true,
-  function: true
-};
-
-const isWrappable = target => Boolean(target && validTypes[typeof target]);
-const isWrapped = target => Boolean(target && target[TARGET_KEY]);
-
-const getTargetProperty = (wrapFn, target, property, value) => {
+const getTargetProperty = (wrapFn, target, names, value) => {
   const info = getTargetInfo(target);
-  const { deep, children, names, checker } = info;
+  const { deep } = info;
 
   if (deep || isFunction(value)) {
-    const childInfo = getChildInfo(children, property);
+    const { lastName: property } = names;
+
+    const childInfo = info.getChild(property);
 
     if (childInfo) {
-      value = wrapFn(value, { info: childInfo });
-    } else {
-      value = wrapFn(value, { deep, names: [...names, property], checker });
-      storeChildInfoFrom(children, property, value);
+      return wrapFn(value, childInfo);
     }
+
+    return wrapFn(value, info.createChildWithNames(names, value));
   }
 
   return value;
 };
 
+/**
+ * Skips prototype methods if they are ignored by config
+ */
 const isIgnoredProperty = (target, info, property, value) => {
-  if (isFunction(value) && !hasOwn(target, property) && getWrapConfigValue(PROXY_IGNORE_PROTOTYPE_METHODS, info)) {
+  if (isFunction(value) && !hasOwn(target, property) && getWrapConfigValue(WRAP_IGNORE_PROTOTYPE_METHODS, info)) {
     return true;
   }
 
   return false;
 };
 
-const getProperty = wrapFn => (target, property) => {
+const getPropertyFactory = wrapFn => (target, property) => {
   const value = target[property];
 
   if (property === INFO_KEY) {
@@ -261,109 +312,100 @@ const getProperty = wrapFn => (target, property) => {
   }
 
   const info = getTargetInfo(target);
-  const { names, config, checker } = info;
+  const { names, data, checker } = info;
+
+  const nextNames = names.clone(property);
 
   if (checker.getProperty) {
-    checker.getProperty(target, property, value, config, names);
+    checker.getProperty(target, nextNames, value, data);
   }
 
-  if (!isWrappable(value) || isWrapped(value) || isIgnoredProperty(target, info, property, value)) {
+  if (!isWrappable(value) || isIgnoredProperty(target, info, property, value)) {
     return value;
   }
 
-  return getTargetProperty(wrapFn, target, property, value);
+  return getTargetProperty(wrapFn, target, nextNames, value);
 };
 
 const setNonTargetProperty = (target, property, value) => {
-  if (property === INFO_KEY) {
-    let info = getTargetInfo(target);
-    if (info && value && info !== value) {
-      info = mergeTargetInfo(info, value);
-    } else {
-      info = value;
-    }
+  const { names, data, checker } = getTargetInfo(target);
 
-    target[property] = info;
-    return true;
-  } else if (!isWrappable(value)) {
-    const { names, config, checker } = getTargetInfo(target);
-
-    if (checker.setProperty) {
-      checker.setProperty(target, property, value, config, names);
-    }
-
-    target[property] = value;
-    return true;
+  if (checker.setProperty) {
+    checker.setProperty(target, names.clone(property), value, data);
   }
 
-  return false;
+  target[property] = value;
+
+  return true;
 };
 
 const setTargetProperty = (wrapFn, target, property, value) => {
   const info = getTargetInfo(target);
-  const { deep, names, checker, config, children } = info;
+  const { names, checker, data } = info;
+  const childInfo = info.getChild(property);
+  const nextNames = childInfo ? childInfo.names : names.clone(property);
 
   if (checker.setProperty) {
-    checker.setProperty(target, property, value, config, names);
+    checker.setProperty(target, nextNames, value, data);
   }
 
-  if (getWrapConfigValue(WRAP_SET_PROPERTY_VALUES, info)) {
-    if (!isWrapped(value)) {
-      const childInfo = getChildInfo(children, property);
-
-      if (childInfo) {
-        value = wrapFn(value, { info: childInfo });
-      } else {
-        value = wrapFn(value, { deep, names: [...names, property], checker });
-      }
-    }
-
-    storeChildInfoFrom(children, property, value);
+  if (childInfo) {
+    value = wrapFn(value, childInfo);
+  } else {
+    value = wrapFn(value, info.createChild(nextNames, value));
   }
 
   target[property] = value;
   return true;
 };
 
-const setProperty = wrapFn => (target, property, value) => {
+const updateTargetInfo = (target, value) => {
+  let info = getTargetInfo(target);
+  if (info && value && info !== value) {
+    info.copy(value);
+  } else {
+    info = value;
+  }
+
+  target[INFO_KEY] = info;
+  return true;
+};
+
+const setPropertyFactory = wrapFn => (target, property, value) => {
   if (property === TARGET_KEY) {
     throw new Error(`"${TARGET_KEY}" is a virtual property and cannot be set`);
   }
 
-  return setNonTargetProperty(target, property, value) || setTargetProperty(wrapFn, target, property, value);
-};
+  if (property === INFO_KEY) {
+    return updateTargetInfo(target, value);
+  }
 
-/* eslint-disable import/prefer-default-export */
+  const info = getTargetInfo(target);
+
+  if (isWrappable(value) && getWrapConfigValue(WRAP_SET_PROPERTY_VALUES, info)) {
+    return setTargetProperty(wrapFn, target, property, value);
+  }
+
+  return setNonTargetProperty(target, property, value);
+};
 
 const getTypeCheckedChild = (wrapFn, info, name, value) => {
   if (!isWrappable(value)) {
     return value;
   }
 
-  let result = value;
+  const childInfo = info.getChild(name);
 
-  if (!isWrapped(value)) {
-    const { children } = info;
-    const childInfo = getChildInfo(children, name);
-
-    if (childInfo) {
-      result = wrapFn(value, { info: childInfo });
-    } else {
-      const { deep, names, checker } = info;
-      result = wrapFn(value, { deep, names: [...names, name], checker });
-      storeChildInfoFrom(children, name, result);
-    }
+  if (childInfo) {
+    return wrapFn(value, childInfo);
   }
 
-  return result;
+  return wrapFn(value, info.createChild(name, value));
 };
 
-const getTargetArguments = (wrapFn, target, argumentsList) => {
-  const info = getTargetInfo(target);
-
+const getTargetArguments = (wrapFn, info, argumentsList) => {
   if (getWrapConfigValue(WRAP_FUNCTION_ARGUMENTS, info)) {
     const { length } = argumentsList;
-    // FIXME cache arguments info objects as children
     for (let index = 0; index < length; index++) {
       argumentsList[index] = getTypeCheckedChild(wrapFn, info, String(index), argumentsList[index]);
     }
@@ -372,20 +414,22 @@ const getTargetArguments = (wrapFn, target, argumentsList) => {
   return argumentsList;
 };
 
-const callFunction = wrapFn => (target, thisArg, argumentsList) => {
+const applyFunctionFactory = wrapFn => (target, thisArg, argumentsList) => {
   const info = getTargetInfo(target);
-  const { names, config, checker } = info;
+  const { names, data, checker } = info;
 
   if (checker.arguments) {
-    checker.arguments(target, thisArg, argumentsList, config, names);
+    checker.arguments(target, names, argumentsList, data, thisArg);
   }
 
-  argumentsList = getTargetArguments(wrapFn, target, argumentsList);
+  if (getWrapConfigValue(WRAP_FUNCTION_ARGUMENTS, info)) {
+    argumentsList = getTargetArguments(wrapFn, info, argumentsList);
+  }
 
   let result = target.apply(thisArg, argumentsList);
 
   if (checker.returnValue) {
-    checker.returnValue(target, thisArg, result, config, names);
+    checker.returnValue(target, names, result, data, thisArg);
   }
 
   if (getWrapConfigValue(WRAP_FUNCTION_RETURN_VALUES, info)) {
@@ -395,60 +439,109 @@ const callFunction = wrapFn => (target, thisArg, argumentsList) => {
   return result;
 };
 
-let wrapWithProxy; // eslint-disable-line
+const constructFactory = wrapFn => (Target, argumentsList) => {
+  const info = getTargetInfo(Target);
+  const { names, data, checker } = info;
+
+  if (checker.arguments) {
+    checker.arguments(Target, names, argumentsList, data);
+  }
+
+  if (getWrapConfigValue(WRAP_FUNCTION_ARGUMENTS, info)) {
+    argumentsList = getTargetArguments(wrapFn, info, argumentsList);
+  }
+
+  let result = new Target(...argumentsList);
+
+  if (checker.returnValue) {
+    checker.returnValue(Target, names, result, data);
+  }
+
+  if (getWrapConfigValue(WRAP_FUNCTION_RETURN_VALUES, info)) {
+    result = getTypeCheckedChild(wrapFn, info, 'returnValue', result);
+  }
+
+  return result;
+};
+
+const deletePropertyFactory = () => (target, property) => {
+  if (property === INFO_KEY) {
+    return delete target[property];
+  } else if (property === TARGET_KEY) {
+    return false;
+  }
+
+  const info = getTargetInfo(target);
+  const { names, data, checker } = info;
+
+  checker.deleteProperty(target, names.clone(property), data);
+
+  return delete target[property];
+};
+
+/* eslint-disable import/prefer-default-export */
+
+const generateHandlers = (create, config = null) => ({
+  get: (!config || config.get) && getPropertyFactory(create),
+  set: (!config || config.set) && setPropertyFactory(create),
+  apply: (!config || config.apply) && applyFunctionFactory(create),
+  construct: (!config || config.construct) && constructFactory(create),
+  deleteProperty: (!config || config.deleteProperty) && deletePropertyFactory(create)
+});
 
 const createInfoFromOptions = (target, {
-  deep = true,
-  names = [],
-  config = null,
-  children = null,
   checker = getDefaultTypeChecker(),
+  deep,
+  names,
+  data,
+  children,
   info = null // exclusive option, if set other options being ignored
-} = {}) => info || createTargetInfo(checker, checker.init(target, getErrorReporter(), config), deep, names, createChildrenCache(children));
+} = {}) => info || createTargetInfo(checker, checker.init(target, getErrorReporter(), data), deep, names, children);
 
-const create = (target, options) => {
-  if (!isWrappable(target) || !isEnabled() || isWrapped(target)) {
+const createWrapFactory = proxyConfig => {
+  let wrapInternal;
+
+  const handlers = generateHandlers((target, info) => {
+    setTargetInfo(target, info);
+    return wrapInternal(target);
+  }, proxyConfig);
+
+  wrapInternal = withProxy(handlers);
+
+  return wrapInternal;
+};
+
+const wrap = (target, options, proxyConfig = null) => {
+  if (!isWrappable(target) || !isEnabled()) {
     return target;
   }
 
-  setTargetInfo(target, createInfoFromOptions(target, options));
+  const wrapInternal = createWrapFactory(proxyConfig);
 
-  return wrapWithProxy(target);
+  return wrapInternal(target, createInfoFromOptions(target, options));
 };
 
-wrapWithProxy = (() => {
-  const callHandler = callFunction(create);
+/* eslint-disable import/prefer-default-export */
 
-  return withProxy({
-    get: getProperty(create),
-    set: setProperty(create),
-    apply: callHandler,
-    construct: callHandler
-  });
-})();
-
-const deepInitializer = (target, options) => {
-  const info = createInfoFromOptions(target, options);
-  const { deep, names, checker, config, children } = info;
+const deepInitializer = (target, info) => {
+  const { names, checker, data } = info;
 
   Object.keys(target).forEach(name => {
     const value = target[name];
+    const nextNames = names.clone(name);
 
-    checker.getProperty(target, name, value, config, names);
+    if (checker.getProperty) {
+      checker.getProperty(target, nextNames, value, data);
+    }
 
     if (isWrappable(value)) {
-      let childInfo = getChildInfo(children, name);
+      let childInfo = info.getChild(name);
 
-      if (childInfo) {
-        deepInitializer(value, { info: childInfo });
-      } else {
-        childInfo = deepInitializer(value, {
-          deep,
-          names: [...names, name],
-          checker
-        });
-        storeChildInfo(children, name, childInfo);
+      if (!childInfo) {
+        childInfo = info.createChildWithNames(nextNames, value);
       }
+
+      deepInitializer(value, childInfo);
     }
   });
 
@@ -457,98 +550,39 @@ const deepInitializer = (target, options) => {
   return info;
 };
 
-const createDeep = (target, options) => {
-  if (!target || typeof target !== 'object' || !isEnabled() || isWrapped(target)) {
+const wrapDeep = (target, options, proxyConfig = null) => {
+  if (!isWrappable(target) || typeof target !== 'object' || !isEnabled()) {
     return target;
   }
 
-  deepInitializer(target, options);
+  const wrapInternal = createWrapFactory(proxyConfig);
+  const info = createInfoFromOptions(target, options);
 
-  return wrapWithProxy(target);
-};
+  deepInitializer(target, info);
 
-const merge = (options, ...sources) => {
-  let target = {};
-
-  if (isEnabled()) {
-    if (!options) {
-      options = {
-        info: getTargetInfo(sources.find(item => hasTargetInfo(item))),
-        deep: false
-      };
-    }
-
-    target = create(target, options);
-  }
-
-  return Object.assign(target, ...sources);
-};
-
-// TODO if enabled, replaces original value with type checked
-const properties = (target, options = undefined, ...names) => {
-  if (!isEnabled()) {
-    return target;
-  }
-
-  if (!isWrappable(target)) {
-    throw new Error('Target must be a valid object.');
-  }
-
-  if (Object.isFrozen(target) || Object.isSealed(target)) {
-    throw new Error('Target object should not be sealed or frozen.');
-  }
-
-  if (!names.length) {
-    // Symbols and non-enumerables must be explicitly specified
-    names = Object.keys(target);
-  }
-
-  const { length } = names;
-  for (let index = 0; index < length; index += 1) {
-    const name = names[index];
-    const { writable, get, set } = Object.getOwnPropertyDescriptor(target, name);
-
-    // Prohibit applying to properties with accessor/mutator pair?
-    if (get && set || writable) {
-      const value = target[name];
-
-      if (isWrappable(value) && !isWrapped(value)) {
-        target[name] = create(value, options);
-      }
-    }
-  }
-
-  return target;
+  return wrapInternal(target, info);
 };
 
 exports.getDefaultTypeChecker = getDefaultTypeChecker;
 exports.setDefaultTypeChecker = setDefaultTypeChecker;
-exports.WRAP_FUNCTION_RETURN_VALUES = WRAP_FUNCTION_RETURN_VALUES;
-exports.WRAP_FUNCTION_ARGUMENTS = WRAP_FUNCTION_ARGUMENTS;
-exports.WRAP_SET_PROPERTY_VALUES = WRAP_SET_PROPERTY_VALUES;
-exports.PROXY_IGNORE_PROTOTYPE_METHODS = PROXY_IGNORE_PROTOTYPE_METHODS;
-exports.getDefaultWrapConfig = getDefaultWrapConfig;
-exports.setWrapConfig = setWrapConfig;
-exports.getWrapConfig = getWrapConfig;
-exports.create = create;
-exports.createDeep = createDeep;
-exports.ConsoleErrorReporter = ConsoleErrorReporter;
-exports.ConsoleWarnReporter = ConsoleWarnReporter;
-exports.ThrowErrorReporter = ThrowErrorReporter;
-exports.getErrorReporter = getErrorReporter;
-exports.setErrorReporter = setErrorReporter;
 exports.isEnabled = isEnabled;
 exports.setEnabled = setEnabled;
+exports.getErrorReporter = getErrorReporter;
+exports.setErrorReporter = setErrorReporter;
+exports.addIgnoredClasses = addIgnoredClasses;
+exports.isIgnoredClass = isIgnoredClass;
+exports.isValueOfIgnoredClass = isValueOfIgnoredClass;
+exports.removeIgnoredClasses = removeIgnoredClasses;
+exports.getWrapConfig = getWrapConfig;
+exports.setWrapConfig = setWrapConfig;
+exports.getWrapConfigValue = getWrapConfigValue;
 exports.getTargetInfo = getTargetInfo;
-exports.setTargetInfo = setTargetInfo;
-exports.hasTargetInfo = hasTargetInfo;
 exports.getTypeChecker = getTypeChecker;
 exports.getTypeCheckerData = getTypeCheckerData;
-exports.mergeTargetInfo = mergeTargetInfo;
-exports.unwrap = unwrap;
-exports.merge = merge;
-exports.properties = properties;
-exports.isWrapped = isWrapped;
+exports.removeTargetInfo = removeTargetInfo;
+exports.wrap = wrap;
+exports.wrapDeep = wrapDeep;
 exports.isWrappable = isWrappable;
-exports.default = create;
+exports.isWrapped = isWrapped;
+exports.unwrap = unwrap;
 //# sourceMappingURL=type-checkers.js.map

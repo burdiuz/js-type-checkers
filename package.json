@@ -22,7 +22,7 @@
     "@actualwave/get-class": "^0.0.1",
     "@actualwave/has-own": "^0.0.1",
     "@actualwave/is-function": "^0.0.1",
-    "@actualwave/path-sequence-to-string": "^0.0.3",
+    "@actualwave/path-sequence-to-string": "^0.0.4",
     "@actualwave/type-checker-simple-reporting": "^0.0.2",
     "@actualwave/with-proxy": "^0.0.1"
   },
