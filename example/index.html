@@ -11,21 +11,33 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
     crossorigin="anonymous"></script>
   <base href="/">
-  <script src="dist/type-checkers.min.js"></script>
+  <script src="type-checkers.js"></script>
   <style type="text/css">
   </style>
   <script type="text/javascript">
+    const getTypeOf = (value) => {
+      const type = typeof value;
+
+      if (type === 'object' && value instanceof Array) {
+        return 'array';
+      }
+
+      return type;
+    };
 
     TypeCheckers.setDefaultTypeChecker({
-      init(target, errorReporter, data) {
-        console.log('init:', target);
-        return {};
+      init() {
       },
-      getProperty(target, names, value, data) {
-        console.log('get:', target, names, value, data);
-      },
-      setProperty(target, names, value, data) {
-        console.log('set:', target, names, value, data);
+
+      setProperty(target, names, value) {
+        const { lastName } = names;
+
+        const currentType = getTypeOf(target[lastName]);
+        const newType = getTypeOf(value);
+
+        if (currentType !== 'undefined' && currentType !== newType) {
+          console.error(`${names} value "${value}" is of type "${newType}" instead of "${currentType}"`);
+        }
       }
     });
 
@@ -55,11 +67,23 @@
       },
     };
 
-    const typeChecked = TypeCheckers.wrapDeep(myObj);
+    const { wrap, wrapDeep, getTargetInfo } = TypeCheckers;
+
+    const typeChecked = wrap(myObj, { name: 'myObj' }, { set: true });
+
+    console.log(getTargetInfo(typeChecked));
+
+    Object.assign(typeChecked, { val1: 'abc', val2: 123, val3: 456, list: '1,2,3' });
 
     // this code will work as intended, but type errors should spam
+    /*
     typeChecked.val1 = 'abc';
-    typeChecked.val2 = { shouldBeString: true };
+    typeChecked.child.val2 = { shouldBeString: true };
+    typeChecked.list = '1,2,3';
+    typeChecked.list = [1, 2, 3, 4];
+    typeChecked.list[2] = '3';
+    typeChecked.list[0] = true;
+    */
 /*
     // when indexed typing enabled
     TypeCheckers.PrimitiveTypeChecker.setIndexValueTypeBy(typeChecked.list, 0);

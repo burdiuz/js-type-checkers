@@ -1,6 +1,5 @@
 import { getDefaultTypeChecker, setDefaultTypeChecker } from './config/default-checker';
 import { isEnabled, setEnabled } from './config/enabled';
-import { getErrorReporter, setErrorReporter } from './config/error-reporter';
 import {
   addIgnoredClasses,
   isIgnoredClass,
@@ -11,15 +10,13 @@ import { getWrapConfig, setWrapConfig, getWrapConfigValue } from './config/wrap-
 import { getTargetInfo, getTypeChecker, getTypeCheckerData, removeTargetInfo } from './info';
 import { wrap } from './proxy/wrap';
 import { wrapDeep } from './proxy/wrapDeep';
-import { isWrappable, isWrapped, unwrap } from './utils';
+import { isWrappable, isWrapped, unwrap, setWrapConfigTo } from './utils';
 
 export {
   getDefaultTypeChecker,
   setDefaultTypeChecker,
   isEnabled,
   setEnabled,
-  getErrorReporter,
-  setErrorReporter,
   addIgnoredClasses,
   isIgnoredClass,
   isValueOfIgnoredClass,
@@ -36,4 +33,5 @@ export {
   isWrappable,
   isWrapped,
   unwrap,
+  setWrapConfigTo,
 };

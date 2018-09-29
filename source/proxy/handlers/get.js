@@ -47,6 +47,7 @@ const getPropertyFactory = (wrapFn) => (target, property) => {
     /*
     target[TARGET_KEY] is a virtual property accessing which indicates
     if object is wrapped with type checked proxy or not.
+    Also it allows "unwrapping" target.
     */
   } else if (property === TARGET_KEY) {
     return target;

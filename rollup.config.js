@@ -1,6 +1,7 @@
-import { baseConfig, minConfig } from './rollup.helpers';
+import { cjsConfig, umdConfig, umdMinConfig } from './rollup.helpers';
 
 export default [
-  baseConfig,
-  minConfig,
+  cjsConfig,
+  umdConfig,
+  umdMinConfig,
 ];

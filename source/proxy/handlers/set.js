@@ -27,7 +27,7 @@ const setTargetProperty = (wrapFn, target, property, value) => {
   if (childInfo) {
     value = wrapFn(value, childInfo);
   } else {
-    value = wrapFn(value, info.createChild(nextNames, value));
+    value = wrapFn(value, info.createChildWithNames(nextNames, value));
   }
 
   target[property] = value;

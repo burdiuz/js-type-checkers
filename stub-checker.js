@@ -1,5 +1,5 @@
 class StubTypeChecker {
-  init(target, errorReporter, data) {}
+  init(target, data) {}
 
   mergeConfigs(targetData, sourceData, names) {}
 

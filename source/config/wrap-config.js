@@ -10,14 +10,12 @@ const {
   getDefault: getDefaultWrapConfig,
   get: getWrapConfig,
   set: setWrapConfig,
-  // FIXME incorrect behaviour, it should fallback to glbal config if undefined in target
-  // FIXME should add instruments to define this config for wrapped target
   getValue,
 } = mapConfigFactory(
   {
     [WRAP_FUNCTION_RETURN_VALUES]: true,
     [WRAP_FUNCTION_ARGUMENTS]: false,
-    [WRAP_SET_PROPERTY_VALUES]: true,
+    [WRAP_SET_PROPERTY_VALUES]: false,
     [WRAP_IGNORE_PROTOTYPE_METHODS]: false,
   },
   (newValues) =>

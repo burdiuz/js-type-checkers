@@ -12,6 +12,7 @@ import hasOwn from '@actualwave/has-own';
 const getChildInfoKey = (name) => `@${name}`;
 
 class ChildrenCache {
+
   constructor(children) {
     if (children) {
       this.cache = { ...children.cache };

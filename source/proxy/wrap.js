@@ -1,9 +1,9 @@
 /* eslint-disable import/prefer-default-export */
 import withProxy from '@actualwave/with-proxy';
+import { createPathSequence } from '@actualwave/path-sequence-to-string';
 
 import { isWrappable } from '../utils';
 import { setTargetInfo, createTargetInfo } from '../info';
-import { getErrorReporter } from '../config/error-reporter';
 import { isEnabled } from '../config/enabled';
 import { getDefaultTypeChecker } from '../config/default-checker';
 
@@ -13,6 +13,20 @@ import applyFunctionFactory from './handlers/apply';
 import constructFactory from './handlers/construct';
 import deletePropertyFactory from './handlers/deleteProperty';
 
+export const createInfoFromOptions = (
+  target,
+  {
+    checker = getDefaultTypeChecker(),
+    deep,
+    name,
+    data,
+    children,
+    info = null, // exclusive option, if set other options being ignored
+  } = {},
+) =>
+  info ||
+  createTargetInfo(checker, checker.init(target, data), deep, createPathSequence(name), children);
+
 const generateHandlers = (create, config = null) => ({
   get: (!config || config.get) && getPropertyFactory(create),
   set: (!config || config.set) && setPropertyFactory(create),
@@ -21,31 +35,17 @@ const generateHandlers = (create, config = null) => ({
   deleteProperty: (!config || config.deleteProperty) && deletePropertyFactory(create),
 });
 
-export const createInfoFromOptions = (
-  target,
-  {
-    checker = getDefaultTypeChecker(),
-    deep,
-    names,
-    data,
-    children,
-    info = null, // exclusive option, if set other options being ignored
-  } = {},
-) =>
-  info ||
-  createTargetInfo(checker, checker.init(target, getErrorReporter(), data), deep, names, children);
-
 export const createWrapFactory = (proxyConfig) => {
   let wrapInternal;
-
-  const handlers = generateHandlers((target, info) => {
+  const assignInfoAndWrap = (target, info) => {
     setTargetInfo(target, info);
     return wrapInternal(target);
-  }, proxyConfig);
+  };
 
+  const handlers = generateHandlers(assignInfoAndWrap, proxyConfig);
   wrapInternal = withProxy(handlers);
 
-  return wrapInternal;
+  return assignInfoAndWrap;
 };
 
 export const wrap = (target, options, proxyConfig = null) => {
@@ -54,6 +54,7 @@ export const wrap = (target, options, proxyConfig = null) => {
   }
 
   const wrapInternal = createWrapFactory(proxyConfig);
+  const info = createInfoFromOptions(target, options);
 
-  return wrapInternal(target, createInfoFromOptions(target, options));
+  return wrapInternal(target, info);
 };

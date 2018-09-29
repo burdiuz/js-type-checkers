@@ -6,6 +6,8 @@ import json from 'rollup-plugin-json';
 import uglify from 'rollup-plugin-uglify';
 import { minify } from 'uglify-es';
 
+export const DESTINATION_FOLDER = 'dist';
+
 export const LIBRARY_FILE_NAME = 'type-checkers';
 export const LIBRARY_VAR_NAME = 'TypeCheckers';
 
@@ -27,14 +29,13 @@ export const plugins = [
   json(),
 ];
 
-export const baseConfig = {
+export const cjsConfig = {
   input: 'source/index.js',
   output: [
     {
-      file: `dist/${LIBRARY_FILE_NAME}.js`,
+      file: 'index.js',
       sourcemap: true,
       exports: 'named',
-      name: LIBRARY_VAR_NAME,
       format: 'cjs',
     },
   ],
@@ -49,19 +50,20 @@ export const baseConfig = {
   ],
 };
 
-export const minConfig = {
+const makeUMDConfig = (suffix = '', additionalPlugins = []) => ({
   input: 'source/index.js',
   output: [
     {
-      file: `dist/${LIBRARY_FILE_NAME}.min.js`,
+      file: `${DESTINATION_FOLDER}/${LIBRARY_FILE_NAME}${suffix}.js`,
       sourcemap: true,
       exports: 'named',
       name: LIBRARY_VAR_NAME,
       format: 'umd',
     },
   ],
-  plugins: [
-    ...plugins,
-    // uglify({}, minify),
-  ],
-};
+  plugins: [...plugins, ...additionalPlugins],
+});
+
+export const umdConfig = makeUMDConfig();
+
+export const umdMinConfig = makeUMDConfig('.min', [uglify({}, minify)]);
