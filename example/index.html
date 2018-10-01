@@ -67,6 +67,8 @@
       },
     };
 
+    // FIXME check what will happen if two type checked objects are merged
+
     const { wrap, wrapDeep, getTargetInfo } = TypeCheckers;
 
     const typeChecked = wrap(myObj, { name: 'myObj' }, { set: true });

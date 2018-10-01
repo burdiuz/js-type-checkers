@@ -3,8 +3,7 @@ import commonjs from 'rollup-plugin-commonjs';
 import babel from 'rollup-plugin-babel';
 //import flow from 'rollup-plugin-flow';
 import json from 'rollup-plugin-json';
-import uglify from 'rollup-plugin-uglify';
-import { minify } from 'uglify-es';
+import { terser } from 'rollup-plugin-terser';
 
 export const DESTINATION_FOLDER = 'dist';
 
@@ -16,10 +15,10 @@ export const plugins = [
   //flow(),
   babel({
     plugins: [
+      '@babel/plugin-external-helpers',
+      '@babel/plugin-transform-flow-strip-types',
+      '@babel/plugin-syntax-object-rest-spread',
       'babel-plugin-transform-class-properties',
-      'babel-plugin-transform-flow-strip-types',
-      ['babel-plugin-transform-object-rest-spread', { useBuiltIns: true }],
-      'babel-plugin-external-helpers',
     ],
     exclude: 'node_modules/**',
     externalHelpers: true,
@@ -45,7 +44,6 @@ export const cjsConfig = {
     '@actualwave/has-own',
     '@actualwave/is-function',
     '@actualwave/path-sequence-to-string',
-    '@actualwave/type-checker-simple-reporting',
     '@actualwave/with-proxy',
   ],
 };
@@ -66,4 +64,4 @@ const makeUMDConfig = (suffix = '', additionalPlugins = []) => ({
 
 export const umdConfig = makeUMDConfig();
 
-export const umdMinConfig = makeUMDConfig('.min', [uglify({}, minify)]);
+export const umdMinConfig = makeUMDConfig('.min', [terser()]);
