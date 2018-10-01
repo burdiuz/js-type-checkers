@@ -48,13 +48,13 @@ export const createWrapFactory = (proxyConfig) => {
   return assignInfoAndWrap;
 };
 
-export const wrap = (target, options, proxyConfig = null) => {
+export const wrap = (target, options = null, proxyConfig = null) => {
   if (!isWrappable(target) || !isEnabled()) {
     return target;
   }
 
   const wrapInternal = createWrapFactory(proxyConfig);
-  const info = createInfoFromOptions(target, options);
+  const info = createInfoFromOptions(target, options || undefined);
 
   return wrapInternal(target, info);
 };

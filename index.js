@@ -535,13 +535,13 @@ const createWrapFactory = proxyConfig => {
   wrapInternal = withProxy(handlers);
   return assignInfoAndWrap;
 };
-const wrap = (target, options, proxyConfig = null) => {
+const wrap = (target, options = null, proxyConfig = null) => {
   if (!isWrappable(target) || !isEnabled()) {
     return target;
   }
 
   const wrapInternal = createWrapFactory(proxyConfig);
-  const info = createInfoFromOptions(target, options);
+  const info = createInfoFromOptions(target, options || undefined);
   return wrapInternal(target, info);
 };
 
