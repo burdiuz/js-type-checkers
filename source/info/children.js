@@ -8,8 +8,12 @@ import hasOwn from '@actualwave/has-own';
   requesting hild info for "constructor" function of the target,
   it returned class constructor which caused errors later,
   when accesing info properties.
+
+  Converts Symbols and Numbers to String.
+
+  FIXME: Map might be fitting better.
  */
-const getChildInfoKey = (name) => `@${name}`;
+const getChildInfoKey = (name) => `@${String(name)}`;
 
 class ChildrenCache {
 

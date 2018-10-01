@@ -284,7 +284,7 @@
 	  when accesing info properties.
 	 */
 
-	const getChildInfoKey = name => `@${name}`;
+	const getChildInfoKey = name => `@${String(name)}`;
 
 	class ChildrenCache {
 	  constructor(children) {
