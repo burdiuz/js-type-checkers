@@ -11,10 +11,36 @@
   <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS"
     crossorigin="anonymous"></script>
   <base href="/">
-  <script src="dist/type-checkers.js"></script>
+  <script src="type-checkers.js"></script>
   <style type="text/css">
   </style>
   <script type="text/javascript">
+    const getTypeOf = (value) => {
+      const type = typeof value;
+
+      if (type === 'object' && value instanceof Array) {
+        return 'array';
+      }
+
+      return type;
+    };
+
+    TypeCheckers.setDefaultTypeChecker({
+      init() {
+      },
+
+      setProperty(target, names, value) {
+        const { lastName } = names;
+
+        const currentType = getTypeOf(target[lastName]);
+        const newType = getTypeOf(value);
+
+        if (currentType !== 'undefined' && currentType !== newType) {
+          console.error(`${names} value "${value}" is of type "${newType}" instead of "${currentType}"`);
+        }
+      }
+    });
+
     class MyClass {
       constructor(arg) {
         this.value = arg;
@@ -41,12 +67,26 @@
       },
     };
 
-    const typeChecked = TypeCheckers.createDeep(myObj);
+    // FIXME check what will happen if two type checked objects are merged
+
+    const { wrap, wrapDeep, getTargetInfo } = TypeCheckers;
+
+    const typeChecked = wrap(myObj, { name: 'myObj' }, { set: true });
+
+    console.log(getTargetInfo(typeChecked));
+
+    Object.assign(typeChecked, { val1: 'abc', val2: 123, val3: 456, list: '1,2,3' });
 
     // this code will work as intended, but type errors should spam
+    /*
     typeChecked.val1 = 'abc';
-    typeChecked.val2 = { shouldBeString: true };
-
+    typeChecked.child.val2 = { shouldBeString: true };
+    typeChecked.list = '1,2,3';
+    typeChecked.list = [1, 2, 3, 4];
+    typeChecked.list[2] = '3';
+    typeChecked.list[0] = true;
+    */
+/*
     // when indexed typing enabled
     TypeCheckers.PrimitiveTypeChecker.setIndexValueTypeBy(typeChecked.list, 0);
     typeChecked.list[0] = 'string';
@@ -114,6 +154,7 @@
 
     // should show errors on mergeing incompatible type definitions.
     console.log(Object.assign(typeChecked, typeCheckedSource));
+    */
   </script>
 </head>
 

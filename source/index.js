@@ -1,86 +1,40 @@
+import { getDefaultTypeChecker, setDefaultTypeChecker } from './config/default-checker';
+import { isEnabled, setEnabled } from './config/enabled';
 import {
-  getDefaultTypeChecker,
-  setDefaultTypeChecker,
-} from './checkers';
-
-import {
-  PROXY_WRAP_FUNCTION_RETURN_VALUES,
-  PROXY_WRAP_FUNCTION_ARGUMENTS,
-  PROXY_WRAP_SET_PROPERTY_VALUES,
-  PROXY_IGNORE_PROTOTYPE_METHODS,
-  getDefaultProxyConfig,
-  setProxyConfig,
-  getProxyConfig,
-  create,
-  createDeep,
-} from './proxy';
-
-import {
-  ConsoleErrorReporter,
-  ConsoleWarnReporter,
-  ThrowErrorReporter,
-  getErrorReporter,
-  setErrorReporter,
-} from './reporters';
-
-import {
-  isEnabled,
-  setEnabled,
-} from './enabled';
-
-import {
-  getTargetInfo,
-  setTargetInfo,
-  hasTargetInfo,
-  getTargetTypeChecker,
-  getTargetTypeCheckerConfig,
-  mergeTargetInfo,
-  getOriginalTarget,
-  merge,
-  properties,
-} from './target';
-
-import {
-  isTypeChecked,
-  isValidTarget,
-} from './utils';
+  addIgnoredClasses,
+  isIgnoredClass,
+  isValueOfIgnoredClass,
+  removeIgnoredClasses,
+} from './config/ignored-classes';
+import { getWrapConfig, setWrapConfig, getWrapConfigValue } from './config/wrap-config';
+import { getTargetInfo, getTypeChecker, getTypeCheckerData, removeTargetInfo } from './info';
+import { wrap } from './proxy/wrap';
+import { wrapDeep } from './proxy/wrapDeep';
+import { isWrappable, isWrapped, unwrap, setWrapConfigTo } from './utils';
+import { assign, merge } from './object';
 
 export {
-  //  checkers
   getDefaultTypeChecker,
   setDefaultTypeChecker,
-  // proxy
-  PROXY_WRAP_FUNCTION_RETURN_VALUES,
-  PROXY_WRAP_FUNCTION_ARGUMENTS,
-  PROXY_WRAP_SET_PROPERTY_VALUES,
-  PROXY_IGNORE_PROTOTYPE_METHODS,
-  getDefaultProxyConfig,
-  setProxyConfig,
-  getProxyConfig,
-  create,
-  createDeep,
-  // reporters
-  ConsoleErrorReporter,
-  ConsoleWarnReporter,
-  ThrowErrorReporter,
-  getErrorReporter,
-  setErrorReporter,
-  // enabled
   isEnabled,
   setEnabled,
-  // target
+  addIgnoredClasses,
+  isIgnoredClass,
+  isValueOfIgnoredClass,
+  removeIgnoredClasses,
+  getWrapConfig,
+  setWrapConfig,
+  getWrapConfigValue,
   getTargetInfo,
-  setTargetInfo,
-  hasTargetInfo,
-  getTargetTypeChecker,
-  getTargetTypeCheckerConfig,
-  mergeTargetInfo,
-  getOriginalTarget,
+  getTypeChecker,
+  getTypeCheckerData,
+  removeTargetInfo,
+  wrap,
+  wrapDeep,
+  isWrappable,
+  isWrapped,
+  unwrap,
+  setWrapConfigTo,
+  assign,
   merge,
-  properties,
-  // utils
-  isTypeChecked,
-  isValidTarget,
 };
-
-export default create;
