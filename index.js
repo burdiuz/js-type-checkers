@@ -111,6 +111,10 @@ const getWrapConfigValue = (name, target) => {
   requesting hild info for "constructor" function of the target,
   it returned class constructor which caused errors later,
   when accesing info properties.
+
+  Converts Symbols and Numbers to String.
+
+  FIXME: Map might be fitting better.
  */
 
 const getChildInfoKey = name => `@${String(name)}`;
@@ -244,6 +248,7 @@ const getTypeCheckerData = target => {
 };
 
 const TARGET_KEY = Symbol('type-checkers::target');
+const isSymbol = value => typeof value === 'symbol';
 const isOfWrappableType = target => {
   const type = typeof target;
   return Boolean(target) && (type === 'function' || type === 'object') && !isValueOfIgnoredClass(target);
@@ -309,8 +314,14 @@ const getPropertyFactory = wrapFn => (target, property) => {
     if object is wrapped with type checked proxy or not.
     Also it allows "unwrapping" target.
     */
-  } else if (property === TARGET_KEY) {
+  }
+
+  if (property === TARGET_KEY) {
     return target;
+  }
+
+  if (isSymbol(property)) {
+    return target[property];
   }
 
   const info = getTargetInfo(target);
@@ -390,6 +401,10 @@ const setPropertyFactory = wrapFn => (target, property, value) => {
   }
 
   if (property === INFO_KEY) {
+    return updateTargetInfo(target, value);
+  }
+
+  if (isSymbol(property)) {
     return updateTargetInfo(target, value);
   }
 
@@ -490,8 +505,14 @@ const constructFactory = wrapFn => (Target, argumentsList) => {
 const deletePropertyFactory = () => (target, property) => {
   if (property === INFO_KEY) {
     return delete target[property];
-  } else if (property === TARGET_KEY) {
+  }
+
+  if (property === TARGET_KEY) {
     return false;
+  }
+
+  if (isSymbol(property)) {
+    return delete target[property];
   }
 
   const info = getTargetInfo(target);
@@ -586,6 +607,66 @@ const wrapDeep = (target, options, proxyConfig = null) => {
   return wrapInternal(target, info);
 };
 
+const findWrapped = list => list.find(isWrapped);
+/**
+ * Merge all objects and return new. If any of source objects were wrapped,
+ * resulting object will be wrapped.
+ * @param  {...any} sources
+ */
+
+
+const merge = (...sources) => {
+  const wrapped = findWrapped(sources);
+
+  if (!wrapped) {
+    return Object.assign({}, ...sources);
+  }
+
+  const info = getTargetInfo(wrapped);
+  return Object.assign(wrap({}, {
+    info
+  }), ...sources);
+};
+/**
+ * Calls merge() and forces wrapped result.
+ * @param {*} options
+ * @param  {...Object} sources
+ */
+
+merge.options = (options, ...sources) => merge(wrap({}, options), ...sources);
+/**
+ * Assign properties from source objects to target. If target or any of sources
+ * were wrapped, resulting object will be wrapped.
+ * @param {*} target
+ * @param  {...any} sources
+ */
+
+
+const assign = (target, ...sources) => {
+  if (isWrapped(target)) {
+    return Object.assign(target, ...sources);
+  }
+
+  const wrapped = findWrapped(sources);
+
+  if (!wrapped) {
+    return Object.assign(target, ...sources);
+  }
+
+  const info = getTargetInfo(wrapped);
+  return Object.assign(wrap(target, {
+    info
+  }), ...sources);
+};
+/**
+ * calls assign() and forces wrapped result.
+ * @param {*} options
+ * @param {Object} target
+ * @param  {...Object} sources
+ */
+
+assign.options = (options, target, ...sources) => assign(wrap(target, options), ...sources);
+
 exports.getDefaultTypeChecker = getDefaultTypeChecker;
 exports.setDefaultTypeChecker = setDefaultTypeChecker;
 exports.isEnabled = isEnabled;
@@ -607,4 +688,6 @@ exports.isWrappable = isWrappable;
 exports.isWrapped = isWrapped;
 exports.unwrap = unwrap;
 exports.setWrapConfigTo = setWrapConfigTo;
+exports.assign = assign;
+exports.merge = merge;
 //# sourceMappingURL=index.js.map

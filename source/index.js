@@ -11,6 +11,7 @@ import { getTargetInfo, getTypeChecker, getTypeCheckerData, removeTargetInfo } f
 import { wrap } from './proxy/wrap';
 import { wrapDeep } from './proxy/wrapDeep';
 import { isWrappable, isWrapped, unwrap, setWrapConfigTo } from './utils';
+import { assign, merge } from './object';
 
 export {
   getDefaultTypeChecker,
@@ -34,4 +35,6 @@ export {
   isWrapped,
   unwrap,
   setWrapConfigTo,
+  assign,
+  merge,
 };
