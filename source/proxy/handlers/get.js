@@ -1,7 +1,7 @@
 import hasOwn from '@actualwave/has-own';
 import isFunction from '@actualwave/is-function';
 
-import { isWrappable, TARGET_KEY } from '../../utils';
+import { isWrappable, isSymbol, TARGET_KEY } from '../../utils';
 import { INFO_KEY, getTargetInfo } from '../../info';
 import { getWrapConfigValue, WRAP_IGNORE_PROTOTYPE_METHODS } from '../../config/wrap-config';
 
@@ -49,8 +49,14 @@ const getPropertyFactory = (wrapFn) => (target, property) => {
     if object is wrapped with type checked proxy or not.
     Also it allows "unwrapping" target.
     */
-  } else if (property === TARGET_KEY) {
+  }
+
+  if (property === TARGET_KEY) {
     return target;
+  }
+
+  if (isSymbol(property)) {
+    return target[property];
   }
 
   const info = getTargetInfo(target);

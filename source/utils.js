@@ -11,13 +11,13 @@ import {
 
 export const TARGET_KEY = Symbol('type-checkers::target');
 
+export const isSymbol = (value) => typeof value === 'symbol';
+
 export const isOfWrappableType = (target) => {
   const type = typeof target;
 
   return (
-    Boolean(target)
-    && (type === 'function' || type === 'object')
-    && !isValueOfIgnoredClass(target)
+    Boolean(target) && (type === 'function' || type === 'object') && !isValueOfIgnoredClass(target)
   );
 };
 

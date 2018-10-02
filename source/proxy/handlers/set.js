@@ -1,5 +1,5 @@
 import { INFO_KEY, getTargetInfo } from '../../info';
-import { TARGET_KEY, isWrappable } from '../../utils';
+import { TARGET_KEY, isSymbol, isWrappable } from '../../utils';
 import { getWrapConfigValue, WRAP_SET_PROPERTY_VALUES } from '../../config/wrap-config';
 
 const setNonTargetProperty = (target, property, value) => {
@@ -52,6 +52,10 @@ const setPropertyFactory = (wrapFn) => (target, property, value) => {
   }
 
   if (property === INFO_KEY) {
+    return updateTargetInfo(target, value);
+  }
+
+  if (isSymbol(property)) {
     return updateTargetInfo(target, value);
   }
 
