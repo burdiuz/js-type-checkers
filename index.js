@@ -4,49 +4,22 @@ Object.defineProperty(exports, '__esModule', { value: true });
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var hasOwn = _interopDefault(require('@actualwave/has-own'));
+var closureValue = require('@actualwave/closure-value');
 var getClass = require('@actualwave/get-class');
+var hasOwn = _interopDefault(require('@actualwave/has-own'));
 var pathSequenceToString = require('@actualwave/path-sequence-to-string');
 var isFunction = _interopDefault(require('@actualwave/is-function'));
 var withProxy = _interopDefault(require('@actualwave/with-proxy'));
 
-const singleConfigFactory = (defaultValue = null, validator = undefined) => {
-  let value = defaultValue;
-  return {
-    get: () => value,
-    set: (newValue = defaultValue) => {
-      if (validator) {
-        value = validator(newValue);
-      } else {
-        value = newValue;
-      }
-    }
-  };
-};
-const mapConfigFactory = (defaultValues = {}, validator = undefined) => {
-  const getDefault = () => ({ ...defaultValues
-  });
-
-  const values = getDefault();
-  return {
-    values,
-    getDefault,
-    set: newValues => Object.assign(values, validator ? validator(newValues) : newValues),
-    get: () => ({ ...values
-    }),
-    getValue: key => hasOwn(values, key) ? values[key] : undefined
-  };
-};
-
 const {
   get: getDefaultTypeChecker,
   set: setDefaultTypeChecker
-} = singleConfigFactory();
+} = closureValue.singleValueFactory();
 
 const {
   get: isEnabled,
   set: setEnabled
-} = singleConfigFactory(true, value => !!value);
+} = closureValue.singleValueFactory(true, value => !!value);
 
 /*
  When ignoring class, its instances will never be wrapped.
@@ -80,27 +53,18 @@ const WRAP_FUNCTION_ARGUMENTS = 'wrapFunctionArguments';
 const WRAP_SET_PROPERTY_VALUES = 'wrapSetPropertyValues';
 const WRAP_IGNORE_PROTOTYPE_METHODS = 'ignorePrototypeMethods';
 const {
-  values,
   getDefault: getDefaultWrapConfig,
-  get: getWrapConfig,
-  set: setWrapConfig,
-  getValue
-} = mapConfigFactory({
-  [WRAP_FUNCTION_RETURN_VALUES]: true,
-  [WRAP_FUNCTION_ARGUMENTS]: false,
-  [WRAP_SET_PROPERTY_VALUES]: false,
-  [WRAP_IGNORE_PROTOTYPE_METHODS]: false
-}, newValues => Object.keys(newValues).forEach(key => {
-  newValues[key] = !!newValues[key];
-}));
+  set: setWrapConfigValue,
+  get
+} = closureValue.valuesMapFactory([[WRAP_FUNCTION_RETURN_VALUES, true], [WRAP_FUNCTION_ARGUMENTS, false], [WRAP_SET_PROPERTY_VALUES, false], [WRAP_IGNORE_PROTOTYPE_METHODS, false]], (key, value) => !!value);
 const getWrapConfigValue = (name, target) => {
-  let value = target[name];
+  let value;
 
   if (target) {
     value = target[name];
   }
 
-  return value === undefined ? getValue(name) : value;
+  return value === undefined ? get(name) : value;
 };
 
 /*
@@ -256,18 +220,24 @@ const isOfWrappableType = target => {
 const isWrapped = target => Boolean(target && target[TARGET_KEY]);
 const isWrappable = target => isOfWrappableType(target) && !isWrapped(target);
 const unwrap = target => target && target[TARGET_KEY] || target;
-const wrapConfigKeys = [WRAP_FUNCTION_ARGUMENTS, WRAP_FUNCTION_RETURN_VALUES, WRAP_IGNORE_PROTOTYPE_METHODS, WRAP_SET_PROPERTY_VALUES];
-const setWrapConfigTo = (target, config) => {
-  if (!isWrapped(target) || !config) {
-    return;
+const setWrapConfigTo = (target, key, value) => {
+  if (!isWrapped(target)) {
+    return false;
   }
 
   const info = getTargetInfo(target);
-  wrapConfigKeys.forEach(key => {
-    if (hasOwn(key, config)) {
-      info[key] = config[key];
-    }
-  });
+
+  switch (key) {
+    case WRAP_FUNCTION_RETURN_VALUES:
+    case WRAP_FUNCTION_ARGUMENTS:
+    case WRAP_SET_PROPERTY_VALUES:
+    case WRAP_IGNORE_PROTOTYPE_METHODS:
+      info[key] = !!value;
+      return true;
+
+    default:
+      return false;
+  }
 };
 
 const getTargetProperty = (wrapFn, target, names, value) => {
@@ -675,8 +645,7 @@ exports.addIgnoredClasses = addIgnoredClasses;
 exports.isIgnoredClass = isIgnoredClass;
 exports.isValueOfIgnoredClass = isValueOfIgnoredClass;
 exports.removeIgnoredClasses = removeIgnoredClasses;
-exports.getWrapConfig = getWrapConfig;
-exports.setWrapConfig = setWrapConfig;
+exports.setWrapConfigValue = setWrapConfigValue;
 exports.getWrapConfigValue = getWrapConfigValue;
 exports.getTargetInfo = getTargetInfo;
 exports.getTypeChecker = getTypeChecker;

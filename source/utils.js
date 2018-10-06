@@ -1,5 +1,3 @@
-import hasOwn from '@actualwave/has-own';
-
 import { isValueOfIgnoredClass } from './config/ignored-classes';
 import { getTargetInfo } from './info';
 import {
@@ -27,23 +25,21 @@ export const isWrappable = (target) => isOfWrappableType(target) && !isWrapped(t
 
 export const unwrap = (target) => (target && target[TARGET_KEY]) || target;
 
-const wrapConfigKeys = [
-  WRAP_FUNCTION_ARGUMENTS,
-  WRAP_FUNCTION_RETURN_VALUES,
-  WRAP_IGNORE_PROTOTYPE_METHODS,
-  WRAP_SET_PROPERTY_VALUES,
-];
-
-export const setWrapConfigTo = (target, config) => {
-  if (!isWrapped(target) || !config) {
-    return;
+export const setWrapConfigTo = (target, key, value) => {
+  if (!isWrapped(target)) {
+    return false;
   }
 
   const info = getTargetInfo(target);
 
-  wrapConfigKeys.forEach((key) => {
-    if (hasOwn(key, config)) {
-      info[key] = config[key];
-    }
-  });
+  switch (key) {
+    case WRAP_FUNCTION_RETURN_VALUES:
+    case WRAP_FUNCTION_ARGUMENTS:
+    case WRAP_SET_PROPERTY_VALUES:
+    case WRAP_IGNORE_PROTOTYPE_METHODS:
+      info[key] = !!value;
+      return true;
+    default:
+      return false;
+  }
 };

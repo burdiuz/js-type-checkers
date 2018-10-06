@@ -12,60 +12,74 @@
 		return module = { exports: {} }, fn(module, module.exports), module.exports;
 	}
 
-	var hasOwn_1 = createCommonjsModule(function (module, exports) {
+	var closureValue = createCommonjsModule(function (module, exports) {
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 
-	const hasOwn = (
-	  (has) =>
-	  (target, property) =>
-	  Boolean(target && has.call(target, property))
-	)(Object.prototype.hasOwnProperty);
-
-	exports.hasOwn = hasOwn;
-	exports.default = hasOwn;
-	});
-
-	var hasOwn = unwrapExports(hasOwn_1);
-	var hasOwn_2 = hasOwn_1.hasOwn;
-
-	const singleConfigFactory = (defaultValue = null, validator = undefined) => {
+	const singleValueFactory = (defaultValue = null, valueFormatter = (value) => value) => {
 	  let value = defaultValue;
+
 	  return {
+	    getDefault: () => defaultValue,
 	    get: () => value,
 	    set: (newValue = defaultValue) => {
-	      if (validator) {
-	        value = validator(newValue);
-	      } else {
-	        value = newValue;
-	      }
-	    }
+	      value = valueFormatter(newValue);
+	    },
 	  };
 	};
-	const mapConfigFactory = (defaultValues = {}, validator = undefined) => {
-	  const getDefault = () => ({ ...defaultValues
-	  });
+
+	const valuesMapFactory = (defaults = new Map(), valueFormatter = (key, value) => value) => {
+	  const defaultValues = new Map(defaults);
+	  const getDefault = () => new Map(defaultValues);
 
 	  const values = getDefault();
+
 	  return {
 	    values,
 	    getDefault,
-	    set: newValues => Object.assign(values, validator ? validator(newValues) : newValues),
-	    get: () => ({ ...values
-	    }),
-	    getValue: key => hasOwn(values, key) ? values[key] : undefined
+	    copy: () => new Map(values),
+	    delete: (key) => values.delete(key),
+	    has: (key) => values.has(key),
+	    set: (key, value) => values.set(key, valueFormatter(key, value)),
+	    get: (key) => values.get(key),
 	  };
 	};
+
+	const valuesSetFactory = (defaults = new Set(), valueFormatter = (value) => value) => {
+	  const defaultValues = new Set(defaults);
+	  const getDefault = () => new Set(defaultValues);
+
+	  const values = getDefault();
+
+	  return {
+	    values,
+	    getDefault,
+	    get: () => new Set(values),
+	    delete: (value) => values.delete(value),
+	    has: (value) => values.has(value),
+	    add: (value) => values.add(valueFormatter(value)),
+	  };
+	};
+
+	exports.singleValueFactory = singleValueFactory;
+	exports.valuesMapFactory = valuesMapFactory;
+	exports.valuesSetFactory = valuesSetFactory;
+	});
+
+	unwrapExports(closureValue);
+	var closureValue_1 = closureValue.singleValueFactory;
+	var closureValue_2 = closureValue.valuesMapFactory;
+	var closureValue_3 = closureValue.valuesSetFactory;
 
 	const {
 	  get: getDefaultTypeChecker,
 	  set: setDefaultTypeChecker
-	} = singleConfigFactory();
+	} = closureValue_1();
 
 	const {
 	  get: isEnabled,
 	  set: setEnabled
-	} = singleConfigFactory(true, value => !!value);
+	} = closureValue_1(true, value => !!value);
 
 	var getClass_1 = createCommonjsModule(function (module, exports) {
 
@@ -144,27 +158,18 @@
 	const WRAP_SET_PROPERTY_VALUES = 'wrapSetPropertyValues';
 	const WRAP_IGNORE_PROTOTYPE_METHODS = 'ignorePrototypeMethods';
 	const {
-	  values,
 	  getDefault: getDefaultWrapConfig,
-	  get: getWrapConfig,
-	  set: setWrapConfig,
-	  getValue
-	} = mapConfigFactory({
-	  [WRAP_FUNCTION_RETURN_VALUES]: true,
-	  [WRAP_FUNCTION_ARGUMENTS]: false,
-	  [WRAP_SET_PROPERTY_VALUES]: false,
-	  [WRAP_IGNORE_PROTOTYPE_METHODS]: false
-	}, newValues => Object.keys(newValues).forEach(key => {
-	  newValues[key] = !!newValues[key];
-	}));
+	  set: setWrapConfigValue,
+	  get
+	} = closureValue_2([[WRAP_FUNCTION_RETURN_VALUES, true], [WRAP_FUNCTION_ARGUMENTS, false], [WRAP_SET_PROPERTY_VALUES, false], [WRAP_IGNORE_PROTOTYPE_METHODS, false]], (key, value) => !!value);
 	const getWrapConfigValue = (name, target) => {
-	  let value = target[name];
+	  let value;
 
 	  if (target) {
 	    value = target[name];
 	  }
 
-	  return value === undefined ? getValue(name) : value;
+	  return value === undefined ? get(name) : value;
 	};
 
 	var pathSequenceToString = createCommonjsModule(function (module, exports) {
@@ -273,6 +278,23 @@
 
 	unwrapExports(pathSequenceToString);
 	var pathSequenceToString_1 = pathSequenceToString.createPathSequence;
+
+	var hasOwn_1 = createCommonjsModule(function (module, exports) {
+
+	Object.defineProperty(exports, '__esModule', { value: true });
+
+	const hasOwn = (
+	  (has) =>
+	  (target, property) =>
+	  Boolean(target && has.call(target, property))
+	)(Object.prototype.hasOwnProperty);
+
+	exports.hasOwn = hasOwn;
+	exports.default = hasOwn;
+	});
+
+	var hasOwn = unwrapExports(hasOwn_1);
+	var hasOwn_2 = hasOwn_1.hasOwn;
 
 	/*
 	  I have had to apply custom key instead of name as is to
@@ -468,18 +490,24 @@
 	const isWrapped = target => Boolean(target && target[TARGET_KEY]);
 	const isWrappable = target => isOfWrappableType(target) && !isWrapped(target);
 	const unwrap = target => target && target[TARGET_KEY] || target;
-	const wrapConfigKeys = [WRAP_FUNCTION_ARGUMENTS, WRAP_FUNCTION_RETURN_VALUES, WRAP_IGNORE_PROTOTYPE_METHODS, WRAP_SET_PROPERTY_VALUES];
-	const setWrapConfigTo = (target, config) => {
-	  if (!isWrapped(target) || !config) {
-	    return;
+	const setWrapConfigTo = (target, key, value) => {
+	  if (!isWrapped(target)) {
+	    return false;
 	  }
 
 	  const info = getTargetInfo(target);
-	  wrapConfigKeys.forEach(key => {
-	    if (hasOwn(key, config)) {
-	      info[key] = config[key];
-	    }
-	  });
+
+	  switch (key) {
+	    case WRAP_FUNCTION_RETURN_VALUES:
+	    case WRAP_FUNCTION_ARGUMENTS:
+	    case WRAP_SET_PROPERTY_VALUES:
+	    case WRAP_IGNORE_PROTOTYPE_METHODS:
+	      info[key] = !!value;
+	      return true;
+
+	    default:
+	      return false;
+	  }
 	};
 
 	const getTargetProperty = (wrapFn, target, names, value) => {
@@ -887,8 +915,7 @@
 	exports.isIgnoredClass = isIgnoredClass;
 	exports.isValueOfIgnoredClass = isValueOfIgnoredClass;
 	exports.removeIgnoredClasses = removeIgnoredClasses;
-	exports.getWrapConfig = getWrapConfig;
-	exports.setWrapConfig = setWrapConfig;
+	exports.setWrapConfigValue = setWrapConfigValue;
 	exports.getWrapConfigValue = getWrapConfigValue;
 	exports.getTargetInfo = getTargetInfo;
 	exports.getTypeChecker = getTypeChecker;

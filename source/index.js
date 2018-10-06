@@ -6,7 +6,7 @@ import {
   isValueOfIgnoredClass,
   removeIgnoredClasses,
 } from './config/ignored-classes';
-import { getWrapConfig, setWrapConfig, getWrapConfigValue } from './config/wrap-config';
+import { setWrapConfigValue, getWrapConfigValue } from './config/wrap-config';
 import { getTargetInfo, getTypeChecker, getTypeCheckerData, removeTargetInfo } from './info';
 import { wrap } from './proxy/wrap';
 import { wrapDeep } from './proxy/wrapDeep';
@@ -22,8 +22,7 @@ export {
   isIgnoredClass,
   isValueOfIgnoredClass,
   removeIgnoredClasses,
-  getWrapConfig,
-  setWrapConfig,
+  setWrapConfigValue,
   getWrapConfigValue,
   getTargetInfo,
   getTypeChecker,
