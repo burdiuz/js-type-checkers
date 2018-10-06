@@ -19,6 +19,7 @@
     "url": "https://github.com/burdiuz/js-type-checkers.git"
   },
   "dependencies": {
+    "@actualwave/closure-value": "^0.0.2",
     "@actualwave/get-class": "^0.0.2",
     "@actualwave/has-own": "^0.0.1",
     "@actualwave/is-function": "^0.0.1",
