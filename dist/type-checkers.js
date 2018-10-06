@@ -85,34 +85,41 @@
 
 	Object.defineProperty(exports, '__esModule', { value: true });
 
-	const getClass = (target) => {
-	  if(target === null || target === undefined) {
-	    return undefined;
-	  }
-	  
-	  const proto = Object.getPrototypeOf(target);
-	  
-	  if (typeof proto === 'object') {
+	const getProtoConstructor = (value) => {
+	  const proto = Object.getPrototypeOf(value);
+
+	  if (proto && typeof proto === 'object') {
 	    return proto.constructor;
 	  }
 
-	  return proto;
+	  return proto || Object;
 	};
 
-	const getParentClass = (target) => {
-	  const def = getClass(target);
-	  
-	  return def && Object.getPrototypeOf(def);
+	const getClass = (value) => {
+	  if(value === null || value === undefined) {
+	    return undefined;
+	  }
+
+	  const constructor = value.constructor;
+
+	  if(
+	    typeof constructor === 'function'
+	    && value instanceof constructor
+	  ) {
+	    return value.constructor;
+	  }
+
+	  return getProtoConstructor(value);
 	};
+
+	const getParentClass = (value) => getProtoConstructor(getClass(value));
 
 	const getClassName = (value) => {
 	  if (!value) return '';
 
-	  const match = String(getClass(value)).match(
-	    /^(?:[^\(\{\s]*)(?:class|function)\s+([\w\d_$]+)(?:\s*\(|\s*\{|\s+extends)/,
-	  );
+	  const def = getClass(value);
 
-	  return match ? match[1] : '';
+	  return def ? def.name : '';
 	};
 
 	exports.getClassName = getClassName;

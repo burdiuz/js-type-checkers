@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@actualwave/closure-value": "^0.0.3",
-    "@actualwave/get-class": "^0.0.2",
+    "@actualwave/get-class": "^0.0.6",
     "@actualwave/has-own": "^0.0.1",
     "@actualwave/is-function": "^0.0.1",
     "@actualwave/path-sequence-to-string": "^0.0.6",
