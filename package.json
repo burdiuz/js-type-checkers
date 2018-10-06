@@ -1,7 +1,7 @@
 {
   "name": "@actualwave/type-checkers",
   "description": "Framework for parameter/value analysis on access or mutation, used for type check in runtime.",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "main": "index.js",
   "keywords": [
     "js",
@@ -19,6 +19,7 @@
     "url": "https://github.com/burdiuz/js-type-checkers.git"
   },
   "dependencies": {
+    "@actualwave/closure-value": "^0.0.3",
     "@actualwave/get-class": "^0.0.2",
     "@actualwave/has-own": "^0.0.1",
     "@actualwave/is-function": "^0.0.1",

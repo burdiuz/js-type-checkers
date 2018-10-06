@@ -1,6 +1,6 @@
-import { singleConfigFactory } from './utils';
+import { singleValueFactory } from '@actualwave/closure-value';
 
 export const {
   get: isEnabled,
   set: setEnabled,
-} = singleConfigFactory(true, (value) => !!value);
+} = singleValueFactory(true, (value) => !!value);

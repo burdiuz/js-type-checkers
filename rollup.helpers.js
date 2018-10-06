@@ -45,6 +45,7 @@ export const cjsConfig = {
     '@actualwave/is-function',
     '@actualwave/path-sequence-to-string',
     '@actualwave/with-proxy',
+    '@actualwave/closure-value',
   ],
 };
 
