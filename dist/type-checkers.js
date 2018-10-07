@@ -208,7 +208,7 @@
 	    return `${string}[${String(name)}]`;
 	  }
 
-	  if (String(parseInt(name, 10)) === name) {
+	  if (String(parseInt(name, 10)) === String(name)) {
 	    return `${string}[${name}]`;
 	  }
 
@@ -531,32 +531,29 @@
 	 */
 
 
-	const isIgnoredProperty = (target, info, property, value) => {
-	  if (isPropertyIgnored(property) || isFunction(value) && !hasOwn(target, property) && getWrapConfigValue(WRAP_IGNORE_PROTOTYPE_METHODS, info)) {
-	    return true;
+	const isWrappableProperty = (target, info, property, value) => {
+	  if (isFunction(value) && !hasOwn(target, property) && getWrapConfigValue(WRAP_IGNORE_PROTOTYPE_METHODS, info)) {
+	    return false;
 	  }
 
-	  return false;
+	  return true;
 	};
 
 	const getPropertyFactory = wrapFn => (target, property) => {
-	  const value = target[property];
+	  const value = target[property]; // property === INFO_KEY not needed because INFO_KEY is Symbol
 
-	  if (property === INFO_KEY) {
+	  if (isSymbol(property) || isPropertyIgnored(property)) {
 	    return value;
-	    /*
+	  }
+	  /*
 	    target[TARGET_KEY] is a virtual property accessing which indicates
 	    if object is wrapped with type checked proxy or not.
 	    Also it allows "unwrapping" target.
-	    */
-	  }
+	  */
+
 
 	  if (property === TARGET_KEY) {
 	    return target;
-	  }
-
-	  if (isSymbol(property)) {
-	    return target[property];
 	  }
 
 	  const info = getTargetInfo(target);
@@ -571,7 +568,7 @@
 	    checker.getProperty(target, nextNames, value, data);
 	  }
 
-	  if (!isWrappable(value) || isIgnoredProperty(target, info, property, value)) {
+	  if (!isWrappable(value) || isWrappableProperty(target, info, property, value)) {
 	    return value;
 	  }
 

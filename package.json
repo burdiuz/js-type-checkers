@@ -23,7 +23,7 @@
     "@actualwave/get-class": "^0.0.6",
     "@actualwave/has-own": "^0.0.1",
     "@actualwave/is-function": "^0.0.1",
-    "@actualwave/path-sequence-to-string": "^0.0.6",
+    "@actualwave/path-sequence-to-string": "^0.0.7",
     "@actualwave/with-proxy": "^0.0.1"
   },
   "devDependencies": {
