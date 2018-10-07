@@ -1,31 +1,13 @@
 import { getClass } from '@actualwave/get-class';
+import { valuesSetFactory } from '@actualwave/closure-value';
 
-/*
- When ignoring class, its instances will never be wrapped.
-*/
-const constructors = new Set();
+const {
+  get: getIgnoredClasses,
+  add: ignoreClass,
+  has: isClassIgnored,
+  delete: stopIgnoringClass,
+} = valuesSetFactory();
 
-export const addIgnoredClasses = (...classes) => {
-  classes.forEach((constructor) => {
-    if (constructor && !constructors.has(constructor)) {
-      constructors.add(constructor);
-    }
-  });
-};
+export const isValueOfIgnoredClass = (value) => isClassIgnored(getClass(value));
 
-export const removeIgnoredClasses = (...classes) => {
-  classes.forEach((constructor) => constructors.delete(constructor));
-};
-
-export const isIgnoredClass = (constructor) => constructors.has(constructor);
-
-export const isValueOfIgnoredClass = (value) => constructors.has(getClass(value));
-
-/**
- * Number, String, Boolean and Symbol will not pass
- *
- *  typeof === 'object' || typeof === 'function'
- *
- * check, so not need to add them.
- */
-addIgnoredClasses(Map, Set, Date, Error);
+export { getIgnoredClasses, ignoreClass, isClassIgnored, stopIgnoringClass };

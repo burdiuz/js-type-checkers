@@ -1,11 +1,18 @@
 import { getDefaultTypeChecker, setDefaultTypeChecker } from './config/default-checker';
 import { isEnabled, setEnabled } from './config/enabled';
 import {
-  addIgnoredClasses,
-  isIgnoredClass,
+  getIgnoredClasses,
+  ignoreClass,
+  isClassIgnored,
   isValueOfIgnoredClass,
-  removeIgnoredClasses,
+  stopIgnoringClass,
 } from './config/ignored-classes';
+import {
+  getIgnoredProperties,
+  ignoreProperty,
+  isPropertyIgnored,
+  stopIgnoringProperty,
+} from './config/ignored-properties';
 import { setWrapConfigValue, getWrapConfigValue } from './config/wrap-config';
 import { getTargetInfo, getTypeChecker, getTypeCheckerData, removeTargetInfo } from './info';
 import { wrap } from './proxy/wrap';
@@ -18,10 +25,15 @@ export {
   setDefaultTypeChecker,
   isEnabled,
   setEnabled,
-  addIgnoredClasses,
-  isIgnoredClass,
+  getIgnoredClasses,
+  ignoreClass,
+  isClassIgnored,
   isValueOfIgnoredClass,
-  removeIgnoredClasses,
+  stopIgnoringClass,
+  getIgnoredProperties,
+  ignoreProperty,
+  isPropertyIgnored,
+  stopIgnoringProperty,
   setWrapConfigValue,
   getWrapConfigValue,
   getTargetInfo,

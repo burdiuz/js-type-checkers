@@ -2,8 +2,9 @@ import hasOwn from '@actualwave/has-own';
 import isFunction from '@actualwave/is-function';
 
 import { isWrappable, isSymbol, TARGET_KEY } from '../../utils';
-import { INFO_KEY, getTargetInfo } from '../../info';
+import { getTargetInfo } from '../../info';
 import { getWrapConfigValue, WRAP_IGNORE_PROTOTYPE_METHODS } from '../../config/wrap-config';
+import { isPropertyIgnored } from '../../config/ignored-properties';
 
 const getTargetProperty = (wrapFn, target, names, value) => {
   const info = getTargetInfo(target);
@@ -27,36 +28,33 @@ const getTargetProperty = (wrapFn, target, names, value) => {
 /**
  * Skips prototype methods if they are ignored by config
  */
-const isIgnoredProperty = (target, info, property, value) => {
+const isWrappableProperty = (target, info, property, value) => {
   if (
     isFunction(value) &&
     !hasOwn(target, property) &&
     getWrapConfigValue(WRAP_IGNORE_PROTOTYPE_METHODS, info)
   ) {
-    return true;
+    return false;
   }
 
-  return false;
+  return true;
 };
 
 const getPropertyFactory = (wrapFn) => (target, property) => {
   const value = target[property];
 
-  if (property === INFO_KEY) {
+  // property === INFO_KEY not needed because INFO_KEY is Symbol
+  if (isSymbol(property) || isPropertyIgnored(property)) {
     return value;
-    /*
+  }
+
+  /*
     target[TARGET_KEY] is a virtual property accessing which indicates
     if object is wrapped with type checked proxy or not.
     Also it allows "unwrapping" target.
-    */
-  }
-
+  */
   if (property === TARGET_KEY) {
     return target;
-  }
-
-  if (isSymbol(property)) {
-    return target[property];
   }
 
   const info = getTargetInfo(target);
@@ -68,7 +66,7 @@ const getPropertyFactory = (wrapFn) => (target, property) => {
     checker.getProperty(target, nextNames, value, data);
   }
 
-  if (!isWrappable(value) || isIgnoredProperty(target, info, property, value)) {
+  if (!isWrappable(value) || isWrappableProperty(target, info, property, value)) {
     return value;
   }
 

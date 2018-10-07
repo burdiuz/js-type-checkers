@@ -21,32 +21,20 @@ const {
   set: setEnabled
 } = closureValue.singleValueFactory(true, value => !!value);
 
-/*
- When ignoring class, its instances will never be wrapped.
-*/
+const {
+  get: getIgnoredClasses,
+  add: ignoreClass,
+  has: isClassIgnored,
+  delete: stopIgnoringClass
+} = closureValue.valuesSetFactory();
+const isValueOfIgnoredClass = value => isClassIgnored(getClass.getClass(value));
 
-const constructors = new Set();
-const addIgnoredClasses = (...classes) => {
-  classes.forEach(constructor => {
-    if (constructor && !constructors.has(constructor)) {
-      constructors.add(constructor);
-    }
-  });
-};
-const removeIgnoredClasses = (...classes) => {
-  classes.forEach(constructor => constructors.delete(constructor));
-};
-const isIgnoredClass = constructor => constructors.has(constructor);
-const isValueOfIgnoredClass = value => constructors.has(getClass.getClass(value));
-/**
- * Number, String, Boolean and Symbol will not pass
- *
- *  typeof === 'object' || typeof === 'function'
- *
- * check, so not need to add them.
- */
-
-addIgnoredClasses(Map, Set, Date, Error);
+const {
+  get: getIgnoredProperties,
+  add: ignoreProperty,
+  has: isPropertyIgnored,
+  delete: stopIgnoringProperty
+} = closureValue.valuesSetFactory(['constructor', 'prototype', '__proto__']);
 
 const WRAP_FUNCTION_RETURN_VALUES = 'wrapFunctionReturnValues';
 const WRAP_FUNCTION_ARGUMENTS = 'wrapFunctionArguments';
@@ -267,7 +255,7 @@ const getTargetProperty = (wrapFn, target, names, value) => {
 
 
 const isIgnoredProperty = (target, info, property, value) => {
-  if (isFunction(value) && !hasOwn(target, property) && getWrapConfigValue(WRAP_IGNORE_PROTOTYPE_METHODS, info)) {
+  if (isPropertyIgnored(property) || isFunction(value) && !hasOwn(target, property) && getWrapConfigValue(WRAP_IGNORE_PROTOTYPE_METHODS, info)) {
     return true;
   }
 
@@ -641,10 +629,15 @@ exports.getDefaultTypeChecker = getDefaultTypeChecker;
 exports.setDefaultTypeChecker = setDefaultTypeChecker;
 exports.isEnabled = isEnabled;
 exports.setEnabled = setEnabled;
-exports.addIgnoredClasses = addIgnoredClasses;
-exports.isIgnoredClass = isIgnoredClass;
+exports.getIgnoredClasses = getIgnoredClasses;
+exports.ignoreClass = ignoreClass;
+exports.isClassIgnored = isClassIgnored;
 exports.isValueOfIgnoredClass = isValueOfIgnoredClass;
-exports.removeIgnoredClasses = removeIgnoredClasses;
+exports.stopIgnoringClass = stopIgnoringClass;
+exports.getIgnoredProperties = getIgnoredProperties;
+exports.ignoreProperty = ignoreProperty;
+exports.isPropertyIgnored = isPropertyIgnored;
+exports.stopIgnoringProperty = stopIgnoringProperty;
 exports.setWrapConfigValue = setWrapConfigValue;
 exports.getWrapConfigValue = getWrapConfigValue;
 exports.getTargetInfo = getTargetInfo;
