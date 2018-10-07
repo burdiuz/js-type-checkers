@@ -532,8 +532,8 @@
 
 
 	const isWrappableProperty = (target, info, property, value) => {
-	  if (isFunction(value) && !hasOwn(target, property) && getWrapConfigValue(WRAP_IGNORE_PROTOTYPE_METHODS, info)) {
-	    return false;
+	  if (isFunction(value) && !hasOwn(target, property)) {
+	    return getWrapConfigValue(WRAP_IGNORE_PROTOTYPE_METHODS, info);
 	  }
 
 	  return true;
@@ -568,11 +568,11 @@
 	    checker.getProperty(target, nextNames, value, data);
 	  }
 
-	  if (!isWrappable(value) || isWrappableProperty(target, info, property, value)) {
-	    return value;
+	  if (isWrappable(value) && isWrappableProperty(target, info, property, value)) {
+	    return getTargetProperty(wrapFn, target, nextNames, value);
 	  }
 
-	  return getTargetProperty(wrapFn, target, nextNames, value);
+	  return value;
 	};
 
 	const setNonTargetProperty = (target, property, value) => {
