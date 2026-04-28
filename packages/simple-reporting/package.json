@@ -1,0 +1,60 @@
+{
+  "name": "@actualwave/type-checker-simple-reporting",
+  "description": "Simple reporting functions for the TypeCheckers library",
+  "version": "0.0.2",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "keywords": [
+    "js",
+    "javascript",
+    "type",
+    "check",
+    "runtime"
+  ],
+  "homepage": "https://github.com/burdiuz/js-type-checker-simple-reporting",
+  "bugs": {
+    "url": "https://github.com/burdiuz/js-type-checker-simple-reporting/issues",
+    "email": "burdiuz@gmail.com"
+  },
+  "license": "MIT",
+  "author": "Oleg Galaburda <burdiuz@gmail.com> (http://actualwave.com/)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/burdiuz/js-type-checker-simple-reporting.git"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "injectGlobals": false,
+    "transform": {
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "module": "CommonJS",
+            "moduleResolution": "node"
+          }
+        }
+      ]
+    },
+    "testMatch": [
+      "**/*.spec.ts"
+    ],
+    "collectCoverage": true,
+    "coverageReporters": [
+      "json",
+      "lcov"
+    ],
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.spec.ts",
+      "!**/node_modules/**"
+    ]
+  },
+  "scripts": {
+    "build": "rollup --config",
+    "build:watch": "rollup --config --watch",
+    "test": "jest --colors",
+    "test:watch": "jest --colors --watch"
+  }
+}

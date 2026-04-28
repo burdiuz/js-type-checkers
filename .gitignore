@@ -5,10 +5,15 @@ ehthumbs.db
 .idea/
 .history/
 .vscode/
+.claude/
 
 bower_components/
 node_modules/
+packages/*/node_modules/
 coverage/
+dist/
+packages/*/coverage/
+packages/*/dist/
 
 # Folder config file
 Desktop.ini
@@ -35,6 +40,7 @@ $RECYCLE.BIN/
 .DS_Store
 .AppleDouble
 .LSOverride
+settings.local.json
 
 # Thumbnails
 ._*

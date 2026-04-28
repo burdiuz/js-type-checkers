@@ -1,0 +1,63 @@
+{
+  "name": "@actualwave/type-checkers",
+  "description": "Framework for parameter/value analysis on access or mutation, used for type check in runtime.",
+  "version": "0.2.1",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "keywords": [
+    "js",
+    "javascript"
+  ],
+  "homepage": "https://github.com/burdiuz/js-type-checkers",
+  "bugs": {
+    "url": "https://github.com/burdiuz/js-type-checkers/issues",
+    "email": "burdiuz@gmail.com"
+  },
+  "license": "MIT",
+  "author": "Oleg Galaburda <burdiuz@gmail.com> (http://actualwave.com/)",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/burdiuz/js-type-checkers.git"
+  },
+  "dependencies": {
+    "@actualwave/closure-value": "^0.0.3",
+    "@actualwave/get-class": "^0.0.6",
+    "@actualwave/path-sequence-to-string": "^0.0.7",
+    "@actualwave/with-proxy": "^0.0.1"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "injectGlobals": false,
+    "transform": {
+      "^.+\\.ts$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "module": "CommonJS",
+            "moduleResolution": "node"
+          }
+        }
+      ]
+    },
+    "testMatch": [
+      "**/*.spec.ts"
+    ],
+    "collectCoverage": true,
+    "coverageReporters": [
+      "json",
+      "lcov"
+    ],
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.spec.ts",
+      "!**/node_modules/**"
+    ]
+  },
+  "scripts": {
+    "build": "rollup --config",
+    "build:watch": "rollup --config --watch",
+    "test": "jest --colors",
+    "test:watch": "jest --colors --watch"
+  }
+}
