@@ -1,7 +1,7 @@
 {
   "name": "@actualwave/type-checkers",
   "description": "Framework for parameter/value analysis on access or mutation, used for type check in runtime.",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "main": "index.js",
   "types": "index.d.ts",
   "keywords": [

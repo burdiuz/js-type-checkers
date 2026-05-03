@@ -1,7 +1,7 @@
 {
   "name": "@actualwave/type-checker-levels-storage",
   "description": "Type information storage",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "index.js",
   "types": "index.d.ts",
   "keywords": [
@@ -11,19 +11,19 @@
     "tree",
     "E4X"
   ],
-  "homepage": "https://github.com/burdiuz/js-type-checker-levels-storage",
+  "homepage": "https://github.com/burdiuz/js-type-checkers",
   "bugs": {
-    "url": "https://github.com/burdiuz/js-type-checker-levels-storage/issues",
+    "url": "https://github.com/burdiuz/js-type-checkers/issues",
     "email": "burdiuz@gmail.com"
   },
   "license": "MIT",
   "author": "Oleg Galaburda <burdiuz@gmail.com> (http://actualwave.com/)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/burdiuz/js-type-checker-levels-storage.git"
+    "url": "https://github.com/burdiuz/js-type-checkers.git"
   },
   "dependencies": {
-    "@actualwave/map-of-sets": "0.0.2"
+    "@actualwave/map-of-sets": "0.0.3"
   },
   "peerDependencies": {
     "@actualwave/type-checkers": ">=0.1.1"

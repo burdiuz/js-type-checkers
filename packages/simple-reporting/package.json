@@ -1,7 +1,7 @@
 {
   "name": "@actualwave/type-checker-simple-reporting",
   "description": "Simple reporting functions for the TypeCheckers library",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "main": "index.js",
   "types": "index.d.ts",
   "keywords": [
@@ -11,16 +11,16 @@
     "check",
     "runtime"
   ],
-  "homepage": "https://github.com/burdiuz/js-type-checker-simple-reporting",
+  "homepage": "https://github.com/burdiuz/js-type-checkers",
   "bugs": {
-    "url": "https://github.com/burdiuz/js-type-checker-simple-reporting/issues",
+    "url": "https://github.com/burdiuz/js-type-checkers/issues",
     "email": "burdiuz@gmail.com"
   },
   "license": "MIT",
   "author": "Oleg Galaburda <burdiuz@gmail.com> (http://actualwave.com/)",
   "repository": {
     "type": "git",
-    "url": "https://github.com/burdiuz/js-type-checker-simple-reporting.git"
+    "url": "https://github.com/burdiuz/js-type-checkers.git"
   },
   "jest": {
     "testEnvironment": "node",

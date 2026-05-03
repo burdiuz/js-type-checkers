@@ -14,7 +14,7 @@ export const cjsConfig = {
   input: 'src/index.ts',
   output: [
     {
-      file: 'index.js',
+      file: 'dist/index.js',
       sourcemap: true,
       exports: 'named',
       format: 'cjs',
