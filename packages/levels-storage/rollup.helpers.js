@@ -10,6 +10,8 @@ export const plugins = [
   json(),
 ];
 
+const external = ['@actualwave/map-of-sets'];
+
 export const baseConfig = {
   input: 'src/index.ts',
   output: [
@@ -21,5 +23,23 @@ export const baseConfig = {
     },
   ],
   plugins,
-  external: ['@actualwave/map-of-sets'],
+  external,
+};
+
+export const umdConfig = {
+  input: 'src/index.ts',
+  output: [
+    {
+      file: 'dist/index.umd.js',
+      sourcemap: true,
+      exports: 'named',
+      format: 'umd',
+      name: 'TypeCheckerLevelsStorage',
+      globals: {
+        '@actualwave/map-of-sets': 'ActualwaveMapOfSets',
+      },
+    },
+  ],
+  plugins,
+  external,
 };

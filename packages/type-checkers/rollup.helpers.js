@@ -10,6 +10,13 @@ export const plugins = [
   json(),
 ];
 
+const external = [
+  '@actualwave/get-class',
+  '@actualwave/path-sequence-to-string',
+  '@actualwave/with-proxy',
+  '@actualwave/closure-value',
+];
+
 export const cjsConfig = {
   input: 'src/index.ts',
   output: [
@@ -21,10 +28,26 @@ export const cjsConfig = {
     },
   ],
   plugins,
-  external: [
-    '@actualwave/get-class',
-    '@actualwave/path-sequence-to-string',
-    '@actualwave/with-proxy',
-    '@actualwave/closure-value',
+  external,
+};
+
+export const umdConfig = {
+  input: 'src/index.ts',
+  output: [
+    {
+      file: 'dist/index.umd.js',
+      sourcemap: true,
+      exports: 'named',
+      format: 'umd',
+      name: 'TypeCheckers',
+      globals: {
+        '@actualwave/get-class': 'ActualwaveGetClass',
+        '@actualwave/path-sequence-to-string': 'ActualwavePathSequenceToString',
+        '@actualwave/with-proxy': 'ActualwaveWithProxy',
+        '@actualwave/closure-value': 'ActualwaveClosureValue',
+      },
+    },
   ],
+  plugins,
+  external,
 };

@@ -22,3 +22,17 @@ export const baseConfig = {
   ],
   plugins,
 };
+
+export const umdConfig = {
+  input: 'src/index.ts',
+  output: [
+    {
+      file: 'dist/index.umd.js',
+      sourcemap: true,
+      exports: 'named',
+      format: 'umd',
+      name: 'TypeCheckerSimpleReporting',
+    },
+  ],
+  plugins,
+};
