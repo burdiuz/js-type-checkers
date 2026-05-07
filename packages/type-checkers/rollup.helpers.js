@@ -35,19 +35,12 @@ export const umdConfig = {
   input: 'src/index.ts',
   output: [
     {
-      file: 'dist/index.umd.js',
+      file: 'dist/type-checkers.umd.js',
       sourcemap: true,
       exports: 'named',
       format: 'umd',
-      name: 'TypeCheckers',
-      globals: {
-        '@actualwave/get-class': 'ActualwaveGetClass',
-        '@actualwave/path-sequence-to-string': 'ActualwavePathSequenceToString',
-        '@actualwave/with-proxy': 'ActualwaveWithProxy',
-        '@actualwave/closure-value': 'ActualwaveClosureValue',
-      },
+      name: 'TypeCheckers'
     },
   ],
   plugins,
-  external,
 };

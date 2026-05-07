@@ -30,16 +30,12 @@ export const umdConfig = {
   input: 'src/index.ts',
   output: [
     {
-      file: 'dist/index.umd.js',
+      file: 'dist/levels-storage.umd.js',
       sourcemap: true,
       exports: 'named',
       format: 'umd',
       name: 'TypeCheckerLevelsStorage',
-      globals: {
-        '@actualwave/map-of-sets': 'ActualwaveMapOfSets',
-      },
     },
   ],
   plugins,
-  external,
 };
